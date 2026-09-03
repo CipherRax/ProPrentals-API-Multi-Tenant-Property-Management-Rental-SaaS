@@ -13,10 +13,17 @@
     "incremental": true,
     "skipLibCheck": true,
     "strict": true,
+<<<<<<< HEAD
     "strictNullChecks": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "strictPropertyInitialization": false,
+=======
+    "strictPropertyInitialization": false,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,

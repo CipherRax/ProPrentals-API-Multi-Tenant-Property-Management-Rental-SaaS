@@ -1,11 +1,160 @@
 # ProPrentals API — Multi-Tenant Property Management & Rental SaaS
 
+<<<<<<< HEAD
 **Status: Phase 5 of 31 complete** (Foundation + Auth + Org RBAC +
 Properties/Buildings/Units + Tenants/Invitations/Tenancies + Rent
 Configuration & Generation + The Ledger). See "Roadmap" below for what's
 built vs. what's next.
 
 ## Phase 5 additions (The Ledger)
+=======
+**Status: Phase 7 of 31 complete** (Foundation + Auth + Org RBAC +
+Properties/Buildings/Units + Tenants/Invitations/Tenancies + Rent
+Configuration & Generation + The Ledger + Payments incl. M-Pesa +
+Receipts & Tenant Statements). See "Roadmap" below for what's built vs.
+what's next.
+
+## Phase 7 additions (Receipts & Tenant Statements)
+
+- Prisma model: `Receipt` — one per successful `Payment` (1:1 via a
+  unique `paymentId`), with a `receiptNumber` generated from a new
+  `Organization.receiptSequence` counter
+- **Receipt numbering is a real atomic guarantee, not careful
+  application code**: `receiptSequence` is incremented via Prisma's
+  `{ increment: 1 }`, which Postgres executes as a single
+  `UPDATE ... SET x = x + 1` — safe under concurrent payments for the
+  same organization, no read-then-write race window. The resulting
+  `receiptNumber` (e.g. `RCT-GREENV-000001`) also carries its own unique
+  constraint as a second layer
+- **A receipt cannot be generated twice for the same payment** (spec
+  §72 rule 5) — enforced structurally, not just by convention:
+  `Payment.receipt` is a 1:1 relation via a unique `paymentId`, so a
+  second attempt hits a database constraint rather than silently
+  duplicating
+- **Receipts are issued atomically, in the same transaction as payment
+  confirmation** — for manual payments (`PaymentsService.recordManualPayment`)
+  and for M-Pesa (`MpesaPaymentsService.finalizeSuccessfulPayment`). A
+  receipt only ever exists alongside a genuinely successful payment,
+  never independently of one
+- **Real PDF generation with `pdfkit`** (`PdfService`, already a
+  dependency since Phase 1, unused until now): both the payment receipt
+  and the tenant statement render as actual multi-page PDF documents,
+  not HTML-to-PDF or a placeholder
+- **PDFs are generated on demand, not stored** — no file is written to
+  disk or object storage. This is a deliberate scope boundary: the
+  file-storage abstraction (spec §45) isn't built yet, and building a
+  one-off storage path just for PDFs felt like the wrong sequencing.
+  Every download re-renders from the same underlying data, which also
+  means a corrected/reversed ledger entry is always reflected the next
+  time a statement is downloaded — there's no stale cached PDF to
+  invalidate
+- **Tenant statement date filtering** (spec §21): `GET .../ledger/statement/pdf`
+  accepts either a `period` shortcut (`CURRENT_MONTH`, `PREVIOUS_MONTH`,
+  `CURRENT_YEAR`) or explicit `from`/`to` dates for a custom range —
+  built on top of the exact same `LedgerService.buildStatement()` the
+  JSON statement endpoint already used since Phase 5, so the numbers in
+  the PDF and the JSON response can never disagree with each other
+- **A real architectural pattern reused from Phase 6**: PDF download
+  endpoints use the `@SkipResponseEnvelope()` decorator (introduced for
+  the M-Pesa callback) so raw binary PDF bytes go out with the right
+  `Content-Type`/`Content-Disposition` headers, not wrapped in the
+  `{success, data}` JSON envelope
+- E2E coverage (`test/receipts.e2e-spec.ts`): two manual payments
+  produce two receipts with distinct, `RCT-`-prefixed numbers; a receipt
+  downloads as a real `application/pdf` response with an `attachment`
+  disposition; a tenant statement PDF downloads successfully via the
+  `period=CURRENT_MONTH` shortcut
+
+## Phase 6 recap (Payments, including M-Pesa)
+
+- Prisma models: `Payment`, `PaymentAllocation`, plus `PaymentMethod`/
+  `PaymentStatus` enums; `RentCharge` gained an `amountPaid` field
+- **`RentCharge.status` now actually derives `PAID`/`PARTIALLY_PAID`
+  from real money received** — the thing Phase 4/5 explicitly deferred.
+  `PaymentsService.allocatePaymentToCharges` is the *only* code path
+  that moves a charge into those statuses, and it only runs after a
+  payment is confirmed successful (manual payments are confirmed by
+  definition; M-Pesa payments only after Daraja's callback says so)
+- **Allocation is FIFO by due date**: a payment covers the oldest
+  outstanding charge first, then the next, etc.; leftover money beyond
+  every outstanding charge becomes an unapplied tenant credit, visible
+  in the overall ledger balance rather than force-attached to a specific
+  charge (documented simplification — see below)
+- **Manual payments** (`POST /tenancies/:id/payments/manual`, spec §19):
+  `OWNER`/`PROPERTY_MANAGER`/`ACCOUNTANT` only, recorded as already-
+  `SUCCESSFUL` (the landlord is logging money already received), posts
+  a `PAYMENT` ledger credit and runs allocation in the same transaction
+- **M-Pesa STK Push** (spec §18) via a real Daraja client
+  (`MpesaClientService`): OAuth token acquisition (cached in memory
+  until near-expiry), STK Push initiation, and STK status query — all
+  genuine HTTP calls to Safaricom's API, not mocked responses. Available
+  both landlord-initiated (`POST /organizations/:id/tenancies/:id/payments/mpesa/stk-push`)
+  and tenant self-service (`POST /tenants/me/tenancies/:id/payments/mpesa/stk-push`)
+- **MSISDN normalization** (`common/utils/msisdn.util.ts`): accepts
+  `0712...`, `712...`, `+254712...`, `254712...`, and the newer `01...`
+  ranges, normalizes all of them to the `2547XXXXXXXX` shape Daraja
+  requires
+- **The callback is genuinely idempotent, at the DB level**: confirming
+  a payment is an atomic `updateMany({ where: { providerCheckoutId,
+  status: 'PENDING' } })` — a duplicate/retried Safaricom callback for
+  an already-processed payment matches zero rows and is silently
+  ignored, never double-posted to the ledger. `providerTransactionId`
+  (the M-Pesa receipt number) also carries its own unique constraint as
+  a second layer, matching your own stated preference for DB-level
+  idempotency over app-layer checks
+- **The callback always responds `200`/`ResultCode: 0`**, regardless of
+  internal outcome — returning an error here just makes Safaricom retry
+  the same callback indefinitely. This required a small but real
+  architectural fix: the global response-enveloping interceptor would
+  otherwise have wrapped the callback response in `{success, data}`,
+  which Safaricom's parser wouldn't recognize. Added a
+  `@SkipResponseEnvelope()` decorator, applied only to this endpoint, so
+  the rest of the API is unaffected — see `common/interceptors/response.interceptor.ts`
+- **Reconciliation sweep** (spec §47's "payment reconciliation"): a
+  BullMQ job runs every 5 minutes, actively querying Daraja for the real
+  status of any M-Pesa payment stuck `PENDING` for more than 5 minutes
+  (callback never arrived), and only gives up and marks it `FAILED`
+  after 24 hours of being unable to resolve it either way
+- Waiving a rent charge was quietly buggy against this phase's new
+  `amountPaid` field until I caught it while wiring payments in: it was
+  crediting the charge's *full original amount* regardless of how much
+  had already been paid, which would have over-credited a partially-paid
+  charge. Fixed — a waiver now only credits the remaining unpaid balance
+- E2E coverage (`test/payments-manual.e2e-spec.ts`): a partial manual
+  payment produces `PARTIALLY_PAID` with the correct running balance;
+  completing it produces `PAID` and a zero balance
+
+### Why M-Pesa can't be verified end-to-end here
+
+`MpesaClientService` makes real HTTP calls to Safaricom's Daraja
+sandbox/production API — there's no fake/mocked success path anywhere
+in the code, per your own instruction to build the real integration
+structure rather than fake business logic. But it genuinely can't be
+exercised without: (1) real `MPESA_CONSUMER_KEY` / `MPESA_CONSUMER_SECRET`
+/ `MPESA_SHORTCODE` / `MPESA_PASSKEY` from a Daraja app, and (2) a
+publicly reachable `MPESA_CALLBACK_URL` for Safaricom to call back to
+(a local dev server isn't reachable from Safaricom's servers — you'd
+need something like ngrok for local testing). Once you have both, the
+manual test path is: initiate STK Push → approve the prompt on a real
+Safaricom line → confirm the callback lands and the ledger/charge update
+correctly. Flagging this rather than writing a test that can't actually
+run.
+
+### Simplification worth knowing about: unapplied credit isn't attached to a charge
+
+If a payment is larger than everything currently owed, the leftover sits
+as a credit visible in the tenant's overall ledger balance (it goes
+negative), but isn't force-attached to any specific `RentCharge` as an
+`OVERPAID` status. The alternative — inventing a rule for which future
+charge absorbs the credit, or marking a past charge `OVERPAID` — felt
+more likely to produce a confusing edge case than a useful one. If you'd
+rather have next month's charge auto-reduced by any existing credit at
+generation time, that's a contained addition to
+`RentChargesService.generateNextChargeForTenancy` — flagging it as an
+option rather than guessing you want it.
+
+## Phase 5 recap (The Ledger)
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
 - Prisma model: `LedgerEntry` — append-only, `LedgerEntryType`
   (`RENT_CHARGE`, `PAYMENT`, `REFUND`, `LATE_FEE`, `CREDIT_ADJUSTMENT`,
@@ -234,7 +383,11 @@ than silently adding a raw-SQL migration file without your sign-off.
   proving Org A cannot read, list, or write into Org B's organization or
   properties even when it has Org B's real UUIDs (spec §63)
 
+<<<<<<< HEAD
 ## What's built in this milestone
+=======
+## Phase 1 recap (Foundation, Auth, Org RBAC)
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
 - NestJS + TypeScript (strict mode) project scaffold
 - Prisma schema: `User`, `Organization`, `OrganizationMember` (RBAC join),
@@ -405,6 +558,53 @@ curl -X POST http://localhost:3000/api/v1/organizations/<organizationId>/tenanci
 # Tenant checks their own ledger statement
 curl http://localhost:3000/api/v1/tenants/me/tenancies/<tenancyId>/ledger/statement \
   -H "Authorization: Bearer <tenantAccessToken>"
+<<<<<<< HEAD
+=======
+
+# Record a manual payment (cash/bank transfer)
+curl -X POST http://localhost:3000/api/v1/organizations/<organizationId>/tenancies/<tenancyId>/payments/manual \
+  -H "Authorization: Bearer <accessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 15000, "method": "CASH", "notes": "Paid at office"}'
+
+# Tenant pays their own rent via M-Pesa STK Push (requires real
+# MPESA_* credentials in .env — see README note above)
+curl -X POST http://localhost:3000/api/v1/tenants/me/tenancies/<tenancyId>/payments/mpesa/stk-push \
+  -H "Authorization: Bearer <tenantAccessToken>" \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber": "0712345678", "amount": 15000}'
+
+# List payments for a tenancy
+curl "http://localhost:3000/api/v1/organizations/<organizationId>/payments?tenancyId=<tenancyId>" \
+  -H "Authorization: Bearer <accessToken>"
+
+# Tenant checks their own payment history
+curl http://localhost:3000/api/v1/tenants/me/payments \
+  -H "Authorization: Bearer <tenantAccessToken>"
+
+# List receipts for a tenancy
+curl "http://localhost:3000/api/v1/organizations/<organizationId>/receipts?tenancyId=<tenancyId>" \
+  -H "Authorization: Bearer <accessToken>"
+
+# Download a receipt as PDF
+curl http://localhost:3000/api/v1/organizations/<organizationId>/receipts/<receiptId>/pdf \
+  -H "Authorization: Bearer <accessToken>" \
+  --output receipt.pdf
+
+# Download a tenant statement as PDF for the current month
+curl "http://localhost:3000/api/v1/organizations/<organizationId>/tenancies/<tenancyId>/ledger/statement/pdf?period=CURRENT_MONTH" \
+  -H "Authorization: Bearer <accessToken>" \
+  --output statement.pdf
+
+# Tenant downloads their own receipt / statement
+curl http://localhost:3000/api/v1/tenants/me/receipts/<receiptId>/pdf \
+  -H "Authorization: Bearer <tenantAccessToken>" \
+  --output receipt.pdf
+
+curl "http://localhost:3000/api/v1/tenants/me/tenancies/<tenancyId>/ledger/statement/pdf?period=PREVIOUS_MONTH" \
+  -H "Authorization: Bearer <tenantAccessToken>" \
+  --output statement.pdf
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 ```
 
 ## Running tests
@@ -418,7 +618,11 @@ The e2e suite needs `DATABASE_URL` pointed at a real (ideally disposable)
 Postgres instance — it registers real users/orgs/properties/tenancies
 against it.
 
+<<<<<<< HEAD
 ## Architecture notes worth knowing before Phase 6+
+=======
+## Architecture notes worth knowing before Phase 8+
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
 - **Tenant isolation boundary**: every operational record from Phase 3
   onward (`Property`, `Unit`, `Tenancy`, `Payment`, ...) will carry
@@ -454,9 +658,16 @@ against it.
 - [x] 9. Tenancies
 - [x] 10–11. Rent configuration, rent generation
 - [x] 12. Ledger
+<<<<<<< HEAD
 - [ ] 13. Payments
 - [ ] 14. M-Pesa
 - [ ] 15. Receipts/statements
+=======
+- [x] 13. Payments
+- [x] 14. M-Pesa (real Daraja integration — see README note on why it
+      can't be verified end-to-end in this environment)
+- [x] 15. Receipts/statements
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 - [ ] 16. Security deposits
 - [ ] 17–19. Notifications, messaging, announcements
 - [ ] 20. Maintenance
@@ -469,6 +680,7 @@ against it.
 - [x] 30. Docker (base setup; will extend as new services are added)
 - [ ] 31. Production hardening
 
+<<<<<<< HEAD
 ## Next up: Phase 6 — Payments (including M-Pesa)
 
 This is where a `Payment` model finally exists for `PAYMENT` ledger
@@ -481,3 +693,63 @@ landlord/accountant) land in the same phase since they share the same
 ledger-posting logic. Will confirm scope — particularly whether you want
 to supply real Daraja sandbox credentials before or after the provider
 abstraction is built — before starting.
+=======
+## Setup gotchas hit while getting this running (fixed in this milestone)
+
+A few environment issues came up getting Phases 1–6 running from a fresh
+clone — all fixed in this codebase now, documented here so a future
+fresh clone (or CI setup) doesn't hit them again:
+
+- **Neon's `channel_binding=require`**: Neon's dashboard adds this to
+  connection strings by default for `psql`/libpq clients, but Prisma's
+  Rust query engine doesn't negotiate it the same way — the TLS
+  handshake fails silently and Prisma reports a generic "can't reach
+  database server" (P1001), even though raw TCP connectivity is fine.
+  Strip `&channel_binding=require` from both `DATABASE_URL` and
+  `DIRECT_URL`; `sslmode=require` alone is sufficient.
+- **Node version**: `cli-spinners` (pulled in by `@nestjs/cli` watch
+  mode) uses `import ... with { type: 'json' }` syntax that requires
+  Node 20+. Added `.nvmrc` and an `engines` field to `package.json` so
+  this fails loudly with a clear version requirement instead of a
+  confusing `SyntaxError` deep in a transitive dependency.
+- **`@nestjs/*` packages must all be the same major version.** Running
+  `npm install <single-package>@latest` or `npm audit fix --force` on
+  just one `@nestjs/*` package (rather than the whole family together)
+  silently produces a broken, straddled dependency tree — the peer
+  dependency errors this produces don't always make the actual cause
+  obvious. All `@nestjs/*` packages here are now pinned to **exact**
+  versions (no `^`) on the v10 line specifically so this can't drift
+  silently again; upgrade the whole family together and re-test if you
+  ever do want to move to v11/v12.
+- **`npm audit fix --force` is not safe to run on this project** without
+  re-verifying every `@nestjs/*` version afterward, for the reason
+  above — it rewrites the dependency tree to satisfy security
+  advisories without regard to which packages need to move together.
+  Plain `npm audit` (read-only) is fine to run any time.
+- **`strictPropertyInitialization`**: disabled in `tsconfig.json`. NestJS
+  DTOs are populated at runtime by `class-transformer`, not via a
+  constructor, so TypeScript's "property has no initializer" check is a
+  false positive on every DTO in the project — this is standard practice
+  for NestJS, not a loosening of type safety elsewhere (everything else
+  `strict: true` covers is still on).
+- **`@types/supertest` was missing** from `devDependencies`, and the
+  version that resolves expects a default import
+  (`import request from 'supertest'`) rather than the namespace-style
+  import (`import * as request from 'supertest'`) — fixed in both
+  `package.json` and every `test/*.e2e-spec.ts` file.
+
+## Next up: Phase 8 — Security Deposits
+
+This is where deposits get their own proper tracking (spec §23):
+required amount, amount actually paid, outstanding balance, and —
+critically — the deductions workflow when a tenancy ends (deduction
+reason, amount, date, and which authorized user made the call), all
+kept auditable rather than a single mutable "deposit held" number. It's
+a natural companion to `TenanciesService.terminate()`, since that's the
+point a deposit typically gets processed. Will confirm scope with you
+before starting — particularly whether deposit transactions should post
+to the same `LedgerEntry` journal as rent (spec's model list keeps them
+as separate `SecurityDeposit`/`DepositTransaction` entities, but there's
+a reasonable case for at least cross-referencing them from the ledger so
+a tenant's full financial picture is visible in one place).
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)

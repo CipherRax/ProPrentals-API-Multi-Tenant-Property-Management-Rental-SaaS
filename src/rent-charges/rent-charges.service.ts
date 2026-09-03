@@ -232,26 +232,49 @@ export class RentChargesService {
       throw new BadRequestException(`Cannot waive a charge with status ${charge.status}`);
     }
 
+<<<<<<< HEAD
+=======
+    // Only the remaining unpaid balance is waived — a partially-paid
+    // charge (spec §16's PARTIALLY_PAID) must not have its ALREADY-PAID
+    // portion also credited back, or the tenant would be over-credited
+    // for money they already legitimately paid.
+    const remainingBalance = Number(charge.amount) - Number(charge.amountPaid);
+
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
     const updated = await this.prisma.$transaction(async (tx) => {
       const result = await tx.rentCharge.update({
         where: { id: rentChargeId },
         data: {
           status: 'WAIVED',
+<<<<<<< HEAD
+=======
+          amountPaid: charge.amount, // fully "settled" from the charge's own perspective
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
           waivedReason: dto.reason,
           waivedByUserId: userId,
           waivedAt: new Date(),
         },
       });
 
+<<<<<<< HEAD
       // Offset the original RENT_CHARGE debit so the tenant's computed
       // balance reflects the waiver immediately — the original charge
       // and its ledger entry are never edited, only offset.
+=======
+      // Offset only the remaining balance — the original RENT_CHARGE
+      // debit and any PAYMENT credits already posted against it are
+      // never edited, only offset.
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
       await this.ledger.postEntry(tx, {
         organizationId,
         tenancyId: charge.tenancyId,
         entryType: 'WAIVER',
         direction: 'CREDIT',
+<<<<<<< HEAD
         amount: charge.amount,
+=======
+        amount: remainingBalance,
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
         description: `Waived: ${dto.reason}`,
         relatedRentChargeId: charge.id,
         createdByUserId: userId,

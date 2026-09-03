@@ -3,8 +3,14 @@ import { LedgerEntryDirection, LedgerEntryType, OrgRole, Prisma } from '@prisma/
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { AuditService } from '../common/utils/audit.service';
+<<<<<<< HEAD
 import { CreateAdjustmentDto } from './dto/create-adjustment.dto';
 import { QueryLedgerDto } from './dto/query-ledger.dto';
+=======
+import { PdfService } from '../pdf/pdf.service';
+import { CreateAdjustmentDto } from './dto/create-adjustment.dto';
+import { QueryLedgerDto, resolvePeriod } from './dto/query-ledger.dto';
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
 const MANAGE_ROLES: OrgRole[] = ['OWNER', 'PROPERTY_MANAGER', 'ACCOUNTANT'];
 
@@ -18,6 +24,10 @@ interface PostEntryParams {
   amount: number | Prisma.Decimal;
   description?: string;
   relatedRentChargeId?: string;
+<<<<<<< HEAD
+=======
+  relatedPaymentId?: string;
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
   createdByUserId?: string;
 }
 
@@ -27,6 +37,10 @@ export class LedgerService {
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
     private readonly audit: AuditService,
+<<<<<<< HEAD
+=======
+    private readonly pdf: PdfService,
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
   ) {}
 
   // ── Core primitive, used both standalone and inside other modules'
@@ -44,6 +58,10 @@ export class LedgerService {
         amount: params.amount,
         description: params.description,
         relatedRentChargeId: params.relatedRentChargeId,
+<<<<<<< HEAD
+=======
+        relatedPaymentId: params.relatedPaymentId,
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
         createdByUserId: params.createdByUserId,
       },
     });
@@ -81,12 +99,69 @@ export class LedgerService {
     return this.buildStatement(tenancy.organizationId, tenancyId, query);
   }
 
+<<<<<<< HEAD
+=======
+  async getStatementPdf(userId: string, organizationId: string, tenancyId: string, query: QueryLedgerDto) {
+    await this.organizations.assertMembership(userId, organizationId);
+    return this.renderStatementPdf(organizationId, tenancyId, query);
+  }
+
+  async getMyStatementPdf(userId: string, tenancyId: string, query: QueryLedgerDto) {
+    const tenancy = await this.prisma.tenancy.findFirst({
+      where: { id: tenancyId, tenantProfile: { userId } },
+    });
+    if (!tenancy) throw new NotFoundException('Tenancy not found');
+    return this.renderStatementPdf(tenancy.organizationId, tenancyId, query);
+  }
+
+  private async renderStatementPdf(organizationId: string, tenancyId: string, query: QueryLedgerDto) {
+    const [statement, context] = await Promise.all([
+      this.buildStatement(organizationId, tenancyId, query),
+      this.prisma.tenancy.findFirst({
+        where: { id: tenancyId, organizationId },
+        include: {
+          organization: { select: { name: true, currency: true } },
+          tenantProfile: { select: { fullName: true } },
+          unit: { select: { unitNumber: true, property: { select: { name: true } } } },
+        },
+      }),
+    ]);
+    if (!context) throw new NotFoundException('Tenancy not found');
+
+    return this.pdf.generateStatementPdf({
+      organizationName: context.organization.name,
+      tenantName: context.tenantProfile.fullName,
+      propertyName: context.unit.property.name,
+      unitNumber: context.unit.unitNumber,
+      periodStart: statement.periodStart,
+      periodEnd: statement.periodEnd,
+      openingBalance: statement.openingBalance,
+      closingBalance: statement.closingBalance,
+      currency: context.organization.currency,
+      entries: statement.entries.map((e) => ({
+        createdAt: e.createdAt,
+        entryType: e.entryType,
+        direction: e.direction,
+        amount: Number(e.amount),
+        description: e.description,
+        runningBalance: e.runningBalance,
+      })),
+    });
+  }
+
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
   private async buildStatement(organizationId: string, tenancyId: string, query: QueryLedgerDto) {
     const tenancy = await this.prisma.tenancy.findFirst({ where: { id: tenancyId, organizationId } });
     if (!tenancy) throw new NotFoundException('Tenancy not found');
 
+<<<<<<< HEAD
     const from = query.from ? new Date(query.from) : tenancy.startDate;
     const to = query.to ? new Date(query.to) : new Date();
+=======
+    const resolved = resolvePeriod(query);
+    const from = resolved.from ? new Date(resolved.from) : tenancy.startDate;
+    const to = resolved.to ? new Date(resolved.to) : new Date();
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
     const [openingTotals, periodEntries] = await Promise.all([
       this.prisma.ledgerEntry.groupBy({

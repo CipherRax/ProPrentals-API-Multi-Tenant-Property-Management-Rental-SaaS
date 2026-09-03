@@ -32,6 +32,14 @@ import { RentConfigurationsModule } from './rent-configurations/rent-configurati
 import { RentChargesModule } from './rent-charges/rent-charges.module';
 import { RentJobsModule } from './rent-jobs/rent-jobs.module';
 import { LedgerModule } from './ledger/ledger.module';
+<<<<<<< HEAD
+=======
+import { PaymentsModule } from './payments/payments.module';
+import { MpesaModule } from './mpesa/mpesa.module';
+import { PaymentJobsModule } from './payment-jobs/payment-jobs.module';
+import { PdfModule } from './pdf/pdf.module';
+import { ReceiptsModule } from './receipts/receipts.module';
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
 @Module({
   imports: [
@@ -69,6 +77,14 @@ import { LedgerModule } from './ledger/ledger.module';
     RentChargesModule,
     RentJobsModule,
     LedgerModule,
+<<<<<<< HEAD
+=======
+    PaymentsModule,
+    MpesaModule,
+    PaymentJobsModule,
+    PdfModule,
+    ReceiptsModule,
+>>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
     HealthModule,
   ],
   providers: [
