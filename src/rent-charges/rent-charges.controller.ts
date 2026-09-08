@@ -1,4 +1,14 @@
-import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RentChargesService } from './rent-charges.service';
 import { QueryRentChargesDto } from './dto/query-rent-charges.dto';
@@ -49,10 +59,15 @@ export class RentChargesController {
   // cron to see rent generation happen. Runs the exact same code path as
   // the scheduled job — this is not a separate/fake implementation.
   @Post('generate-now')
-  async generateNow(@CurrentUser('userId') userId: string, @Param('organizationId') organizationId: string) {
+  async generateNow(
+    @CurrentUser('userId') userId: string,
+    @Param('organizationId') organizationId: string,
+  ) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     if (membership.role !== 'OWNER') {
-      throw new ForbiddenException('Only the organization owner can manually trigger rent generation');
+      throw new ForbiddenException(
+        'Only the organization owner can manually trigger rent generation',
+      );
     }
     return this.rentChargesService.generateChargesForAllActiveTenancies();
   }

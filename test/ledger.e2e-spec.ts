@@ -120,7 +120,9 @@ describe('Ledger (e2e)', () => {
     expect(afterAdjust.body.data.closingBalance).toBe(500);
 
     const reverse = await request(app.getHttpServer())
-      .post(`/api/v1/organizations/${organizationId}/tenancies/${tenancyId}/ledger/entries/${entryId}/reverse`)
+      .post(
+        `/api/v1/organizations/${organizationId}/tenancies/${tenancyId}/ledger/entries/${entryId}/reverse`,
+      )
       .set('Authorization', `Bearer ${ownerToken}`);
     expect(reverse.status).toBe(201);
 
@@ -134,7 +136,9 @@ describe('Ledger (e2e)', () => {
 
     // A second reversal attempt of the same entry must be rejected.
     const secondReverse = await request(app.getHttpServer())
-      .post(`/api/v1/organizations/${organizationId}/tenancies/${tenancyId}/ledger/entries/${entryId}/reverse`)
+      .post(
+        `/api/v1/organizations/${organizationId}/tenancies/${tenancyId}/ledger/entries/${entryId}/reverse`,
+      )
       .set('Authorization', `Bearer ${ownerToken}`);
     expect([409, 400]).toContain(secondReverse.status);
   });

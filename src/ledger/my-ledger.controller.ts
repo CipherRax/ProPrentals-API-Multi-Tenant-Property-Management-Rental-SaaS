@@ -1,19 +1,11 @@
-<<<<<<< HEAD
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-=======
 import { Controller, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 import { LedgerService } from './ledger.service';
 import { QueryLedgerDto } from './dto/query-ledger.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-<<<<<<< HEAD
-=======
 import { SkipResponseEnvelope } from '../common/decorators/skip-response-envelope.decorator';
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
 @ApiTags('ledger')
 @ApiBearerAuth()
@@ -30,8 +22,6 @@ export class MyLedgerController {
   ) {
     return this.ledgerService.getMyStatement(userId, tenancyId, query);
   }
-<<<<<<< HEAD
-=======
 
   @SkipResponseEnvelope()
   @Get('statement/pdf')
@@ -46,5 +36,4 @@ export class MyLedgerController {
     res.setHeader('Content-Disposition', `attachment; filename="statement-${tenancyId}.pdf"`);
     res.send(pdf);
   }
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 }

@@ -11,9 +11,11 @@ import * as argon2 from 'argon2';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { AuditService } from '../common/utils/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { TenanciesService } from '../tenancies/tenancies.service';
+import { TransactionalEmailService } from '../notifications/transactional-email.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { QueryInvitationsDto } from './dto/query-invitations.dto';
@@ -28,10 +30,12 @@ export class TenantInvitationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
+    private readonly subscriptions: SubscriptionsService,
     private readonly audit: AuditService,
     private readonly authService: AuthService,
     private readonly tenanciesService: TenanciesService,
     private readonly config: ConfigService,
+    private readonly transactionalEmail: TransactionalEmailService,
   ) {}
 
   // ── Landlord-facing ─────────────────────────────────────────────────
@@ -89,15 +93,31 @@ export class TenantInvitationsService {
     });
 
     const frontendUrl = this.config.get<string>('frontendUrl');
+    const invitationLink = `${frontendUrl}/tenant-invitations/${rawToken}`;
 
-    // Notifications (email/SMS delivery) land in a later phase — for now
-    // the raw token/link is returned directly to the inviter to relay
-    // out-of-band. It is NEVER stored or logged anywhere in plaintext
-    // beyond this one response.
+    const organization = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    // Best-effort delivery — TransactionalEmailService logs failures
+    // internally and never throws, so a broken SMTP/SMS config can't
+    // block invitation creation. The raw token/link is ALSO still
+    // returned directly to the inviter below: useful as a fallback if
+    // delivery fails, and necessary for local dev without real SMTP/SMS
+    // credentials configured.
+    await this.transactionalEmail.sendTenantInvitation(
+      invitation.email,
+      invitation.phone,
+      invitation.tenantFullName,
+      organization?.name ?? 'your landlord',
+      invitationLink,
+    );
+
     return {
       invitation: { ...invitation, tokenHash: undefined },
       rawToken,
-      invitationLink: `${frontendUrl}/tenant-invitations/${rawToken}`,
+      invitationLink,
     };
   }
 
@@ -193,13 +213,15 @@ export class TenantInvitationsService {
   }
 
   async accept(rawToken: string, dto: AcceptInvitationDto) {
-    const tokenHash = hashSecureToken(rawToken);
-
     // Atomic single-use claim: flips PENDING -> we re-check status inside
     // the transaction below and only ever act once, but this initial
     // lookup also lets us fail fast with a clear error before opening a
     // transaction for the (more expensive) user/tenancy creation.
     const invitation = await this.loadValidInvitation(rawToken);
+
+    // Plan-limit check: on-boarding a tenant creates a TenantProfile row,
+    // which counts against the organization's maxTenants (spec §59).
+    await this.subscriptions.assertCanCreate(invitation.organizationId, 'tenant');
 
     const existingUser = await this.prisma.user.findFirst({
       where: { email: invitation.email },

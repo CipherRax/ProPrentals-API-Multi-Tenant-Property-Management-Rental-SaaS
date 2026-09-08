@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { OrgRole, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { AuditService } from '../common/utils/audit.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -16,6 +17,7 @@ export class PropertiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
+    private readonly subscriptions: SubscriptionsService,
     private readonly audit: AuditService,
   ) {}
 
@@ -28,6 +30,7 @@ export class PropertiesService {
   async create(userId: string, organizationId: string, dto: CreatePropertyDto) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     this.assertCanManage(membership.role);
+    await this.subscriptions.assertCanCreate(organizationId, 'property');
 
     const property = await this.prisma.property.create({
       data: { ...dto, organizationId },
@@ -88,12 +91,7 @@ export class PropertiesService {
     return property;
   }
 
-  async update(
-    userId: string,
-    organizationId: string,
-    propertyId: string,
-    dto: UpdatePropertyDto,
-  ) {
+  async update(userId: string, organizationId: string, propertyId: string, dto: UpdatePropertyDto) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     this.assertCanManage(membership.role);
 

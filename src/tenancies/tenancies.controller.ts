@@ -41,6 +41,15 @@ export class TenanciesController {
     return this.tenanciesService.findOne(userId, organizationId, tenancyId);
   }
 
+  @Get(':tenancyId/financial-summary')
+  getFinancialSummary(
+    @CurrentUser('userId') userId: string,
+    @Param('organizationId') organizationId: string,
+    @Param('tenancyId') tenancyId: string,
+  ) {
+    return this.tenanciesService.getFinancialSummary(userId, organizationId, tenancyId);
+  }
+
   @Patch(':tenancyId/terminate')
   terminate(
     @CurrentUser('userId') userId: string,

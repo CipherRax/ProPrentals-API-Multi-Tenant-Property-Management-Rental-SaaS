@@ -40,7 +40,8 @@ export class ReceiptsService {
       data: { receiptSequence: { increment: 1 } },
     });
 
-    const receiptNumber = `RCT-${org.slug.split('-')[0].toUpperCase().slice(0, 6)}-${String(org.receiptSequence).padStart(6, '0')}`;
+    const shortOrgId = org.id.replace(/-/g, '').slice(0, 8).toUpperCase();
+    const receiptNumber = `RCT-${org.slug.split('-')[0].toUpperCase().slice(0, 6)}-${shortOrgId}-${String(org.receiptSequence).padStart(6, '0')}`;
 
     return tx.receipt.create({
       data: { organizationId, tenancyId, paymentId, receiptNumber, amount },
@@ -122,7 +123,8 @@ export class ReceiptsService {
       amount: Number(receipt.amount),
       currency: receipt.organization.currency,
       paymentMethod: receipt.payment.method,
-      transactionReference: receipt.payment.providerTransactionId ?? receipt.payment.manualReference,
+      transactionReference:
+        receipt.payment.providerTransactionId ?? receipt.payment.manualReference,
       description: `${receipt.payment.method} payment for tenancy`,
     });
   }

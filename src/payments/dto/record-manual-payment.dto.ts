@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '@prisma/client';
-import { IsDateString, IsEnum, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsDateString, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class RecordManualPaymentDto {
   @ApiProperty()
@@ -8,7 +8,10 @@ export class RecordManualPaymentDto {
   @Min(0.01)
   amount: number;
 
-  @ApiProperty({ enum: PaymentMethod, description: 'Must not be MPESA — use the STK Push flow for that' })
+  @ApiProperty({
+    enum: PaymentMethod,
+    description: 'Must not be MPESA — use the STK Push flow for that',
+  })
   @IsIn(['CASH', 'BANK_TRANSFER', 'OTHER'])
   method: Extract<PaymentMethod, 'CASH' | 'BANK_TRANSFER' | 'OTHER'>;
 

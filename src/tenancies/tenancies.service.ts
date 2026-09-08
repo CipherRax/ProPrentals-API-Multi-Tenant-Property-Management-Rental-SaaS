@@ -9,6 +9,7 @@ import { BillingFrequency, OrgRole, Prisma, TenancyStatus } from '@prisma/client
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { AuditService } from '../common/utils/audit.service';
+import { LedgerService } from '../ledger/ledger.service';
 import { CreateTenancyDto } from './dto/create-tenancy.dto';
 import { TerminateTenancyDto } from './dto/terminate-tenancy.dto';
 import { QueryTenanciesDto } from './dto/query-tenancies.dto';
@@ -36,6 +37,7 @@ export class TenanciesService {
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
     private readonly audit: AuditService,
+    private readonly ledger: LedgerService,
   ) {}
 
   private assertCanManage(role: OrgRole) {
@@ -53,11 +55,7 @@ export class TenanciesService {
    * derives the unit's availabilityStatus + the tenant profile's status
    * from the outcome — the two are never set independently.
    */
-  async createTenancyWithinTransaction(
-    tx: Tx,
-    organizationId: string,
-    terms: TenancyTerms,
-  ) {
+  async createTenancyWithinTransaction(tx: Tx, organizationId: string, terms: TenancyTerms) {
     const unit = await tx.unit.findFirst({
       where: { id: terms.unitId, deletedAt: null, property: { organizationId } },
     });
@@ -75,7 +73,8 @@ export class TenanciesService {
     const tenantProfile = await tx.tenantProfile.findFirst({
       where: { id: terms.tenantProfileId, organizationId, deletedAt: null },
     });
-    if (!tenantProfile) throw new NotFoundException('Tenant profile not found in this organization');
+    if (!tenantProfile)
+      throw new NotFoundException('Tenant profile not found in this organization');
 
     const isImmediatelyActive = terms.startDate <= new Date();
     const tenancyStatus: TenancyStatus = isImmediatelyActive ? 'ACTIVE' : 'PENDING';
@@ -128,6 +127,17 @@ export class TenanciesService {
         billingFrequency: terms.billingFrequency ?? 'MONTHLY',
         paymentDueDay: terms.paymentDueDay ?? 5,
         effectiveFrom: terms.startDate,
+      },
+    });
+
+    // Seed the deposit record too (spec §23) — one per tenancy, tracked
+    // from PENDING through to SETTLED. requiredAmount snapshots the
+    // agreed deposit at signing, same pattern as Tenancy.depositAmount.
+    await tx.securityDeposit.create({
+      data: {
+        organizationId,
+        tenancyId: tenancy.id,
+        requiredAmount: terms.depositAmount,
       },
     });
 
@@ -201,6 +211,40 @@ export class TenanciesService {
     });
   }
 
+  /**
+   * Rent balance and deposit status live in genuinely separate systems
+   * (spec §23 vs §15/§73 — see deposits module README note on why they
+   * aren't commingled at the data layer). This is the one place they're
+   * brought together for a single "how does this tenancy stand
+   * financially" view, without either system needing to know about the
+   * other.
+   */
+  async getFinancialSummary(userId: string, organizationId: string, tenancyId: string) {
+    await this.organizations.assertMembership(userId, organizationId);
+    await this.getOwnedTenancy(organizationId, tenancyId);
+
+    const [rentBalance, deposit] = await Promise.all([
+      this.ledger.getBalance(organizationId, tenancyId),
+      this.prisma.securityDeposit.findUnique({ where: { tenancyId } }),
+    ]);
+
+    return {
+      tenancyId,
+      rentBalance,
+      deposit: deposit
+        ? {
+            status: deposit.status,
+            requiredAmount: deposit.requiredAmount,
+            amountPaid: deposit.amountPaid,
+            amountHeld:
+              Number(deposit.amountPaid) -
+              Number(deposit.amountDeducted) -
+              Number(deposit.amountRefunded),
+          }
+        : null,
+    };
+  }
+
   async terminate(
     userId: string,
     organizationId: string,
@@ -212,9 +256,7 @@ export class TenanciesService {
 
     const tenancy = await this.getOwnedTenancy(organizationId, tenancyId);
     if (tenancy.status !== 'ACTIVE' && tenancy.status !== 'PENDING') {
-      throw new BadRequestException(
-        `Cannot terminate a tenancy with status ${tenancy.status}`,
-      );
+      throw new BadRequestException(`Cannot terminate a tenancy with status ${tenancy.status}`);
     }
 
     const terminationDate = new Date(dto.terminationDate);
@@ -245,6 +287,15 @@ export class TenanciesService {
       await tx.rentConfiguration.updateMany({
         where: { tenancyId, effectiveTo: null },
         data: { effectiveTo: terminationDate },
+      });
+
+      // Signal that the deposit now needs processing (spec §23: "when a
+      // tenancy ends, the landlord can process the deposit"). Only
+      // transitions deposits that actually have money held — a deposit
+      // still PENDING (nothing ever paid in) has nothing to process.
+      await tx.securityDeposit.updateMany({
+        where: { tenancyId, status: { in: ['PARTIALLY_PAID', 'FULLY_PAID'] } },
+        data: { status: 'PROCESSING' },
       });
 
       return result;

@@ -1,10 +1,4 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-<<<<<<< HEAD
-import { IsDateString, IsOptional } from 'class-validator';
-
-export class QueryLedgerDto {
-  @ApiPropertyOptional({ description: 'ISO date — defaults to the tenancy start date' })
-=======
 import { IsDateString, IsEnum, IsOptional } from 'class-validator';
 
 export enum StatementPeriod {
@@ -23,23 +17,18 @@ export class QueryLedgerDto {
   @IsEnum(StatementPeriod)
   period?: StatementPeriod;
 
-  @ApiPropertyOptional({ description: 'ISO date — defaults to the tenancy start date, or the resolved period start' })
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
+  @ApiPropertyOptional({
+    description: 'ISO date — defaults to the tenancy start date, or the resolved period start',
+  })
   @IsOptional()
   @IsDateString()
   from?: string;
 
-<<<<<<< HEAD
-  @ApiPropertyOptional({ description: 'ISO date — defaults to now' })
-=======
   @ApiPropertyOptional({ description: 'ISO date — defaults to now, or the resolved period end' })
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
   @IsOptional()
   @IsDateString()
   to?: string;
 }
-<<<<<<< HEAD
-=======
 
 /**
  * Resolves the `period` shortcut into concrete from/to dates. Explicit
@@ -65,4 +54,3 @@ export function resolvePeriod(query: QueryLedgerDto): { from?: string; to?: stri
   }
   return {};
 }
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)

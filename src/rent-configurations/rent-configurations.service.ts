@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { OrgRole } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
@@ -38,7 +43,9 @@ export class RentConfigurationsService {
   ) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     if (!MANAGE_ROLES.includes(membership.role)) {
-      throw new ForbiddenException('Only owners or property managers can change rent configuration');
+      throw new ForbiddenException(
+        'Only owners or property managers can change rent configuration',
+      );
     }
 
     const tenancy = await this.getOwnedTenancy(organizationId, tenancyId);

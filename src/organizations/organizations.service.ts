@@ -39,11 +39,7 @@ export class OrganizationsService {
     return org;
   }
 
-  async updateOrganization(
-    userId: string,
-    organizationId: string,
-    dto: UpdateOrganizationDto,
-  ) {
+  async updateOrganization(userId: string, organizationId: string, dto: UpdateOrganizationDto) {
     const membership = await this.assertMembership(userId, organizationId);
     if (membership.role !== 'OWNER' && membership.role !== 'PROPERTY_MANAGER') {
       throw new ForbiddenException('Only owners or property managers can update the organization');

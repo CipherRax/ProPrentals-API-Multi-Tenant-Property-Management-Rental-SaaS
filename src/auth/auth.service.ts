@@ -14,6 +14,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuditService } from '../common/utils/audit.service';
+import { TransactionalEmailService } from '../notifications/transactional-email.service';
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -41,6 +42,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
+    private readonly transactionalEmail: TransactionalEmailService,
   ) {}
 
   // Public: other modules (e.g. tenant-invitation acceptance) need to
@@ -143,7 +145,11 @@ export class AuthService {
       newValue: { email: result.user.email, organizationId: result.organization.id },
     });
 
-    const tokens = await this.issueTokenPair(result.user.id, result.user.email, result.organization.id);
+    const tokens = await this.issueTokenPair(
+      result.user.id,
+      result.user.email,
+      result.organization.id,
+    );
 
     return {
       user: this.sanitizeUser(result.user),
@@ -297,8 +303,17 @@ export class AuthService {
       },
     });
 
-    // Phase 17 (Notifications) wires this into the email provider.
-    // For now, the token is only available server-side / in logs in dev.
+    const frontendUrl = this.config.get<string>('frontendUrl');
+    // Fire-and-forget from the caller's perspective — TransactionalEmailService
+    // logs failures internally but never throws, so a broken SMTP config
+    // can't turn "forgot password" into a 500 (which would also leak
+    // that the email genuinely exists, defeating the point of the
+    // generic response above).
+    await this.transactionalEmail.sendPasswordReset(
+      user.email,
+      `${frontendUrl}/reset-password?token=${rawToken}`,
+    );
+
     return { message: 'If that email exists, a reset link has been sent.' };
   }
 
@@ -324,10 +339,7 @@ export class AuthService {
     return { message: 'Password reset successfully. Please log in.' };
   }
 
-  private sanitizeUser(user: {
-    passwordHash?: string;
-    [key: string]: unknown;
-  }) {
+  private sanitizeUser(user: { passwordHash?: string; [key: string]: unknown }) {
     const { passwordHash: _passwordHash, ...safe } = user;
     return safe;
   }

@@ -1,20 +1,12 @@
-<<<<<<< HEAD
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-=======
 import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 import { LedgerService } from './ledger.service';
 import { CreateAdjustmentDto } from './dto/create-adjustment.dto';
 import { QueryLedgerDto } from './dto/query-ledger.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-<<<<<<< HEAD
-=======
 import { SkipResponseEnvelope } from '../common/decorators/skip-response-envelope.decorator';
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
 @ApiTags('ledger')
 @ApiBearerAuth()
@@ -42,8 +34,6 @@ export class LedgerController {
     return this.ledgerService.getStatement(userId, organizationId, tenancyId, query);
   }
 
-<<<<<<< HEAD
-=======
   @SkipResponseEnvelope()
   @Get('statement/pdf')
   async getStatementPdf(
@@ -59,7 +49,6 @@ export class LedgerController {
     res.send(pdf);
   }
 
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
   @Post('adjustments')
   createAdjustment(
     @CurrentUser('userId') userId: string,

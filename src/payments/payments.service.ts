@@ -5,6 +5,7 @@ import { OrganizationsService } from '../organizations/organizations.service';
 import { AuditService } from '../common/utils/audit.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { ReceiptsService } from '../receipts/receipts.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { RecordManualPaymentDto } from './dto/record-manual-payment.dto';
 import { QueryPaymentsDto } from './dto/query-payments.dto';
 import { buildPaginatedResult, paginationSkip } from '../common/utils/paginate';
@@ -23,6 +24,7 @@ export class PaymentsService {
     private readonly audit: AuditService,
     private readonly ledger: LedgerService,
     private readonly receipts: ReceiptsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ── Core allocation logic, shared by manual payments and confirmed
@@ -51,7 +53,8 @@ export class PaymentsService {
 
       const allocateAmount = Math.min(chargeRemaining, remaining);
       const newAmountPaid = Number(charge.amountPaid) + allocateAmount;
-      const newStatus: RentChargeStatus = newAmountPaid >= Number(charge.amount) ? 'PAID' : 'PARTIALLY_PAID';
+      const newStatus: RentChargeStatus =
+        newAmountPaid >= Number(charge.amount) ? 'PAID' : 'PARTIALLY_PAID';
 
       await tx.paymentAllocation.create({
         data: { paymentId, rentChargeId: charge.id, amount: allocateAmount },
@@ -89,10 +92,14 @@ export class PaymentsService {
   ) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     if (!MANAGE_ROLES.includes(membership.role)) {
-      throw new ForbiddenException('Only owners, property managers, or accountants can record manual payments');
+      throw new ForbiddenException(
+        'Only owners, property managers, or accountants can record manual payments',
+      );
     }
 
-    const tenancy = await this.prisma.tenancy.findFirst({ where: { id: tenancyId, organizationId } });
+    const tenancy = await this.prisma.tenancy.findFirst({
+      where: { id: tenancyId, organizationId },
+    });
     if (!tenancy) throw new NotFoundException('Tenancy not found');
 
     const confirmedAt = dto.paidAt ? new Date(dto.paidAt) : new Date();
@@ -145,7 +152,45 @@ export class PaymentsService {
       newValue: payment,
     });
 
+    await this.notifyPaymentConfirmed(
+      organizationId,
+      tenancyId,
+      payment.id,
+      dto.amount,
+      dto.method,
+    );
+
     return payment;
+  }
+
+  /**
+   * Shared by manual payment recording and the M-Pesa callback handler
+   * (MpesaPaymentsService) — post-commit, best-effort, never throws.
+   */
+  async notifyPaymentConfirmed(
+    organizationId: string,
+    tenancyId: string,
+    paymentId: string,
+    amount: number,
+    method: string,
+  ) {
+    const tenancy = await this.prisma.tenancy.findUnique({
+      where: { id: tenancyId },
+      include: { tenantProfile: { select: { userId: true, email: true, phone: true } } },
+    });
+    const recipientUserId = tenancy?.tenantProfile?.userId;
+    if (!recipientUserId) return;
+
+    await this.notifications.dispatch({
+      recipientUserId,
+      organizationId,
+      type: 'PAYMENT_CONFIRMED',
+      title: 'Payment received',
+      body: `Your payment of ${amount.toLocaleString()} via ${method} has been received and confirmed. Thank you!`,
+      data: { paymentId, tenancyId },
+      email: tenancy?.tenantProfile?.email,
+      phone: tenancy?.tenantProfile?.phone ?? undefined,
+    });
   }
 
   // ── Landlord-facing ─────────────────────────────────────────────────

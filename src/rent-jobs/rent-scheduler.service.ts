@@ -22,7 +22,11 @@ export class RentSchedulerService {
     await this.rentQueue.add(
       RENT_JOB_NAMES.GENERATE_CHARGES,
       {},
-      { jobId: `${RENT_JOB_NAMES.GENERATE_CHARGES}-${today}`, removeOnComplete: true, removeOnFail: 50 },
+      {
+        jobId: `${RENT_JOB_NAMES.GENERATE_CHARGES}-${today}`,
+        removeOnComplete: true,
+        removeOnFail: 50,
+      },
     );
     this.logger.log('Enqueued daily rent charge generation job');
   }
@@ -33,7 +37,11 @@ export class RentSchedulerService {
     await this.rentQueue.add(
       RENT_JOB_NAMES.DETECT_OVERDUE,
       {},
-      { jobId: `${RENT_JOB_NAMES.DETECT_OVERDUE}-${today}`, removeOnComplete: true, removeOnFail: 50 },
+      {
+        jobId: `${RENT_JOB_NAMES.DETECT_OVERDUE}-${today}`,
+        removeOnComplete: true,
+        removeOnFail: 50,
+      },
     );
     this.logger.log('Enqueued daily overdue-rent detection job');
   }

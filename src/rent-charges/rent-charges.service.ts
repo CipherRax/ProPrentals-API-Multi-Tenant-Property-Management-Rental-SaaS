@@ -1,9 +1,16 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { OrgRole, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { AuditService } from '../common/utils/audit.service';
 import { LedgerService } from '../ledger/ledger.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { QueryRentChargesDto } from './dto/query-rent-charges.dto';
 import { WaiveRentChargeDto } from './dto/waive-rent-charge.dto';
 import { buildPaginatedResult, paginationSkip } from '../common/utils/paginate';
@@ -20,6 +27,7 @@ export class RentChargesService {
     private readonly organizations: OrganizationsService,
     private readonly audit: AuditService,
     private readonly ledger: LedgerService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ── System-triggered (called from the BullMQ worker, no user context) ─
@@ -31,7 +39,11 @@ export class RentChargesService {
    * means a duplicate attempt is a no-op, not a duplicate row — running
    * this twice, or concurrently, is always safe (spec §14, §49).
    */
-  async generateChargesForAllActiveTenancies(): Promise<{ created: number; skipped: number; errors: number }> {
+  async generateChargesForAllActiveTenancies(): Promise<{
+    created: number;
+    skipped: number;
+    errors: number;
+  }> {
     const activeTenancies = await this.prisma.tenancy.findMany({
       where: { status: 'ACTIVE' },
       select: { id: true, startDate: true, unitId: true, organizationId: true },
@@ -134,6 +146,16 @@ export class RentChargesService {
         newValue: charge,
       });
 
+      // Post-commit, best-effort — never let a slow/flaky notification
+      // provider affect the rent-generation job itself.
+      await this.notifyRentDue(
+        charge.id,
+        tenancy.id,
+        tenancy.organizationId,
+        Number(charge.amount),
+        charge.dueDate,
+      );
+
       return charge;
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
@@ -152,26 +174,74 @@ export class RentChargesService {
   async detectOverdueCharges(): Promise<{ updated: number }> {
     const candidates = await this.prisma.rentCharge.findMany({
       where: { status: 'UNPAID' },
-      include: { rentConfiguration: { select: { gracePeriodDays: true } } },
+      include: {
+        rentConfiguration: { select: { gracePeriodDays: true } },
+        tenancy: {
+          select: {
+            id: true,
+            organizationId: true,
+            tenantProfile: { select: { userId: true, email: true, phone: true } },
+          },
+        },
+      },
     });
 
     const now = new Date();
-    const overdueIds = candidates
-      .filter((charge) => {
-        const graceMs = (charge.rentConfiguration?.gracePeriodDays ?? 0) * 24 * 60 * 60 * 1000;
-        return charge.dueDate.getTime() + graceMs < now.getTime();
-      })
-      .map((c) => c.id);
+    const overdue = candidates.filter((charge) => {
+      const graceMs = (charge.rentConfiguration?.gracePeriodDays ?? 0) * 24 * 60 * 60 * 1000;
+      return charge.dueDate.getTime() + graceMs < now.getTime();
+    });
 
-    if (overdueIds.length === 0) return { updated: 0 };
+    if (overdue.length === 0) return { updated: 0 };
 
     await this.prisma.rentCharge.updateMany({
-      where: { id: { in: overdueIds } },
+      where: { id: { in: overdue.map((c) => c.id) } },
       data: { status: 'OVERDUE' },
     });
 
-    this.logger.log(`Marked ${overdueIds.length} rent charge(s) OVERDUE`);
-    return { updated: overdueIds.length };
+    for (const charge of overdue) {
+      const recipientUserId = charge.tenancy.tenantProfile?.userId;
+      if (!recipientUserId) continue;
+      await this.notifications.dispatch({
+        recipientUserId,
+        organizationId: charge.tenancy.organizationId,
+        type: 'RENT_OVERDUE',
+        title: 'Rent payment overdue',
+        body: `Your rent payment of ${Number(charge.amount).toLocaleString()} due ${charge.dueDate.toDateString()} is now overdue. Please make payment as soon as possible.`,
+        data: { rentChargeId: charge.id, tenancyId: charge.tenancy.id },
+        email: charge.tenancy.tenantProfile?.email,
+        phone: charge.tenancy.tenantProfile?.phone ?? undefined,
+      });
+    }
+
+    this.logger.log(`Marked ${overdue.length} rent charge(s) OVERDUE`);
+    return { updated: overdue.length };
+  }
+
+  private async notifyRentDue(
+    rentChargeId: string,
+    tenancyId: string,
+    organizationId: string,
+    amount: number,
+    dueDate: Date,
+  ) {
+    const tenancy = await this.prisma.tenancy.findUnique({
+      where: { id: tenancyId },
+      include: { tenantProfile: { select: { userId: true, email: true, phone: true } } },
+    });
+    const recipientUserId = tenancy?.tenantProfile?.userId;
+    if (!recipientUserId) return;
+
+    await this.notifications.dispatch({
+      recipientUserId,
+      organizationId,
+      type: 'RENT_DUE',
+      title: 'New rent charge',
+      body: `A rent charge of ${amount.toLocaleString()} has been generated, due ${dueDate.toDateString()}.`,
+      data: { rentChargeId, tenancyId },
+      email: tenancy?.tenantProfile?.email,
+      phone: tenancy?.tenantProfile?.phone ?? undefined,
+    });
   }
 
   // ── Landlord-facing ─────────────────────────────────────────────────
@@ -221,7 +291,9 @@ export class RentChargesService {
   ) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     if (!MANAGE_ROLES.includes(membership.role)) {
-      throw new ForbiddenException('Only owners, property managers, or accountants can waive rent charges');
+      throw new ForbiddenException(
+        'Only owners, property managers, or accountants can waive rent charges',
+      );
     }
 
     const charge = await this.prisma.rentCharge.findFirst({
@@ -232,49 +304,33 @@ export class RentChargesService {
       throw new BadRequestException(`Cannot waive a charge with status ${charge.status}`);
     }
 
-<<<<<<< HEAD
-=======
     // Only the remaining unpaid balance is waived — a partially-paid
     // charge (spec §16's PARTIALLY_PAID) must not have its ALREADY-PAID
     // portion also credited back, or the tenant would be over-credited
     // for money they already legitimately paid.
     const remainingBalance = Number(charge.amount) - Number(charge.amountPaid);
 
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
     const updated = await this.prisma.$transaction(async (tx) => {
       const result = await tx.rentCharge.update({
         where: { id: rentChargeId },
         data: {
           status: 'WAIVED',
-<<<<<<< HEAD
-=======
           amountPaid: charge.amount, // fully "settled" from the charge's own perspective
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
           waivedReason: dto.reason,
           waivedByUserId: userId,
           waivedAt: new Date(),
         },
       });
 
-<<<<<<< HEAD
-      // Offset the original RENT_CHARGE debit so the tenant's computed
-      // balance reflects the waiver immediately — the original charge
-      // and its ledger entry are never edited, only offset.
-=======
       // Offset only the remaining balance — the original RENT_CHARGE
       // debit and any PAYMENT credits already posted against it are
       // never edited, only offset.
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
       await this.ledger.postEntry(tx, {
         organizationId,
         tenancyId: charge.tenancyId,
         entryType: 'WAIVER',
         direction: 'CREDIT',
-<<<<<<< HEAD
-        amount: charge.amount,
-=======
         amount: remainingBalance,
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
         description: `Waived: ${dto.reason}`,
         relatedRentChargeId: charge.id,
         createdByUserId: userId,

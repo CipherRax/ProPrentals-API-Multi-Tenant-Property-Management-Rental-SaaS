@@ -32,14 +32,24 @@ import { RentConfigurationsModule } from './rent-configurations/rent-configurati
 import { RentChargesModule } from './rent-charges/rent-charges.module';
 import { RentJobsModule } from './rent-jobs/rent-jobs.module';
 import { LedgerModule } from './ledger/ledger.module';
-<<<<<<< HEAD
-=======
 import { PaymentsModule } from './payments/payments.module';
 import { MpesaModule } from './mpesa/mpesa.module';
 import { PaymentJobsModule } from './payment-jobs/payment-jobs.module';
 import { PdfModule } from './pdf/pdf.module';
 import { ReceiptsModule } from './receipts/receipts.module';
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
+import { DepositsModule } from './deposits/deposits.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MessagingModule } from './messaging/messaging.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
+import { PublicListingsModule } from './public-listings/public-listings.module';
+import { InquiriesModule } from './inquiries/inquiries.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { BillingModule } from './billing/billing.module';
+import { ReportsModule } from './reports/reports.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { AuditModule } from './audit/audit.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -77,14 +87,24 @@ import { ReceiptsModule } from './receipts/receipts.module';
     RentChargesModule,
     RentJobsModule,
     LedgerModule,
-<<<<<<< HEAD
-=======
     PaymentsModule,
     MpesaModule,
     PaymentJobsModule,
     PdfModule,
     ReceiptsModule,
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
+    DepositsModule,
+    NotificationsModule,
+    MessagingModule,
+    AnnouncementsModule,
+    MaintenanceModule,
+    PublicListingsModule,
+    InquiriesModule,
+    SubscriptionsModule,
+    BillingModule,
+    ReportsModule,
+    DashboardModule,
+    AuditModule,
+    AdminModule,
     HealthModule,
   ],
   providers: [

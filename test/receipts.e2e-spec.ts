@@ -109,7 +109,9 @@ describe('Receipts (e2e)', () => {
 
   it('downloads a tenant statement as PDF via the period shortcut', async () => {
     const pdf = await request(app.getHttpServer())
-      .get(`/api/v1/organizations/${organizationId}/tenancies/${tenancyId}/ledger/statement/pdf?period=CURRENT_MONTH`)
+      .get(
+        `/api/v1/organizations/${organizationId}/tenancies/${tenancyId}/ledger/statement/pdf?period=CURRENT_MONTH`,
+      )
       .set('Authorization', `Bearer ${ownerToken}`);
 
     expect(pdf.status).toBe(200);

@@ -55,9 +55,13 @@ export class MpesaPaymentsService {
   ) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     if (!MANAGE_ROLES.includes(membership.role)) {
-      throw new ForbiddenException('You are not authorized to initiate payments for this organization');
+      throw new ForbiddenException(
+        'You are not authorized to initiate payments for this organization',
+      );
     }
-    const tenancy = await this.prisma.tenancy.findFirst({ where: { id: tenancyId, organizationId } });
+    const tenancy = await this.prisma.tenancy.findFirst({
+      where: { id: tenancyId, organizationId },
+    });
     if (!tenancy) throw new NotFoundException('Tenancy not found');
 
     return this.initiate(tenancy.organizationId, tenancy.id, dto, userId);
@@ -142,7 +146,12 @@ export class MpesaPaymentsService {
       if (ResultCode !== 0) {
         const claimed = await this.prisma.payment.updateMany({
           where: { providerCheckoutId: CheckoutRequestID, status: 'PENDING' },
-          data: { status: 'FAILED', failureReason: ResultDesc, failedAt: new Date(), rawCallbackPayload: payload as unknown as Prisma.InputJsonValue },
+          data: {
+            status: 'FAILED',
+            failureReason: ResultDesc,
+            failedAt: new Date(),
+            rawCallbackPayload: payload as unknown as Prisma.InputJsonValue,
+          },
         });
         if (claimed.count === 1) {
           this.logger.log(`M-Pesa payment failed for checkout ${CheckoutRequestID}: ${ResultDesc}`);
@@ -156,16 +165,28 @@ export class MpesaPaymentsService {
       const confirmedAmount = Number(getItem('Amount') ?? 0);
 
       if (!receiptNumber) {
-        this.logger.warn(`M-Pesa success callback missing receipt number: ${JSON.stringify(payload)}`);
+        this.logger.warn(
+          `M-Pesa success callback missing receipt number: ${JSON.stringify(payload)}`,
+        );
         return { ResultCode: 0, ResultDesc: 'Accepted' };
       }
 
-      await this.finalizeSuccessfulPayment(CheckoutRequestID, receiptNumber, confirmedAmount, payload);
+      await this.finalizeSuccessfulPayment(
+        CheckoutRequestID,
+        receiptNumber,
+        confirmedAmount,
+        payload,
+      );
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        this.logger.warn(`Duplicate M-Pesa receipt number for checkout ${CheckoutRequestID} — already recorded elsewhere`);
+        this.logger.warn(
+          `Duplicate M-Pesa receipt number for checkout ${CheckoutRequestID} — already recorded elsewhere`,
+        );
       } else {
-        this.logger.error(`Error processing M-Pesa callback: ${(err as Error).message}`, (err as Error).stack);
+        this.logger.error(
+          `Error processing M-Pesa callback: ${(err as Error).message}`,
+          (err as Error).stack,
+        );
       }
     }
 
@@ -187,7 +208,7 @@ export class MpesaPaymentsService {
     confirmedAmount: number | undefined,
     rawPayload?: unknown,
   ) {
-    await this.prisma.$transaction(async (tx) => {
+    const confirmed = await this.prisma.$transaction(async (tx) => {
       // Atomic single-claim: only proceeds if this checkout is still
       // PENDING, so a duplicate/retried callback for an already-
       // processed payment is a safe no-op (spec §49).
@@ -201,12 +222,16 @@ export class MpesaPaymentsService {
         },
       });
       if (claimed.count !== 1) {
-        this.logger.log(`M-Pesa checkout ${checkoutRequestId} already processed — ignoring duplicate`);
-        return;
+        this.logger.log(
+          `M-Pesa checkout ${checkoutRequestId} already processed — ignoring duplicate`,
+        );
+        return null;
       }
 
-      const payment = await tx.payment.findFirst({ where: { providerCheckoutId: checkoutRequestId } });
-      if (!payment) return; // unreachable given the claim above
+      const payment = await tx.payment.findFirst({
+        where: { providerCheckoutId: checkoutRequestId },
+      });
+      if (!payment) return null; // unreachable given the claim above
 
       const amount = confirmedAmount || Number(payment.amount);
 
@@ -227,7 +252,13 @@ export class MpesaPaymentsService {
       // Our own Receipt + receiptNumber (spec §20) — distinct from the
       // M-Pesa receipt number above, which is Safaricom's transaction
       // reference and gets stored as Payment.providerTransactionId.
-      await this.receipts.issueReceiptForPayment(tx, payment.organizationId, payment.tenancyId, payment.id, amount);
+      await this.receipts.issueReceiptForPayment(
+        tx,
+        payment.organizationId,
+        payment.tenancyId,
+        payment.id,
+        amount,
+      );
 
       await this.audit.log({
         organizationId: payment.organizationId,
@@ -236,7 +267,27 @@ export class MpesaPaymentsService {
         entityId: payment.id,
         newValue: { receiptNumber, amount },
       });
+
+      return {
+        organizationId: payment.organizationId,
+        tenancyId: payment.tenancyId,
+        paymentId: payment.id,
+        amount,
+      };
     });
+
+    // Post-commit, best-effort — dispatched after the transaction closes
+    // so a slow/flaky notification provider can never hold the DB
+    // transaction open.
+    if (confirmed) {
+      await this.payments.notifyPaymentConfirmed(
+        confirmed.organizationId,
+        confirmed.tenancyId,
+        confirmed.paymentId,
+        confirmed.amount,
+        'MPESA',
+      );
+    }
   }
 
   // ── Reconciliation sweep for stuck PENDING payments (spec §47/§18) ──
@@ -248,7 +299,11 @@ export class MpesaPaymentsService {
    * only after a long timeout with no resolvable status does it give up
    * and mark the payment FAILED so it doesn't block forever.
    */
-  async reconcileStalePendingPayments(): Promise<{ resolved: number; stillPending: number; timedOut: number }> {
+  async reconcileStalePendingPayments(): Promise<{
+    resolved: number;
+    stillPending: number;
+    timedOut: number;
+  }> {
     const staleThresholdMs = 5 * 60 * 1000; // 5 minutes
     const giveUpThresholdMs = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -286,11 +341,17 @@ export class MpesaPaymentsService {
           stillPending += 1;
         }
       } catch (err) {
-        this.logger.warn(`STK status query failed for payment ${payment.id}: ${(err as Error).message}`);
+        this.logger.warn(
+          `STK status query failed for payment ${payment.id}: ${(err as Error).message}`,
+        );
         if (Date.now() - payment.initiatedAt.getTime() > giveUpThresholdMs) {
           await this.prisma.payment.updateMany({
             where: { id: payment.id, status: 'PENDING' },
-            data: { status: 'FAILED', failureReason: 'Timed out awaiting M-Pesa confirmation', failedAt: new Date() },
+            data: {
+              status: 'FAILED',
+              failureReason: 'Timed out awaiting M-Pesa confirmation',
+              failedAt: new Date(),
+            },
           });
           timedOut += 1;
         } else {

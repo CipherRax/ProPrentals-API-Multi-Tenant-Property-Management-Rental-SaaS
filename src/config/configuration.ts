@@ -39,7 +39,11 @@ export default () => ({
   },
 
   sms: {
-    providerKey: process.env.SMS_PROVIDER_KEY,
+    africastalking: {
+      username: process.env.AFRICASTALKING_USERNAME,
+      apiKey: process.env.AFRICASTALKING_API_KEY,
+      senderId: process.env.AFRICASTALKING_SENDER_ID,
+    },
   },
 
   storage: {

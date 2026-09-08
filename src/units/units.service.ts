@@ -8,6 +8,7 @@ import {
 import { OrgRole, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { AuditService } from '../common/utils/audit.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
@@ -22,6 +23,7 @@ export class UnitsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
+    private readonly subscriptions: SubscriptionsService,
     private readonly audit: AuditService,
   ) {}
 
@@ -52,6 +54,7 @@ export class UnitsService {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     this.assertCanManage(membership.role);
     await this.getOwnedProperty(organizationId, propertyId);
+    await this.subscriptions.assertCanCreate(organizationId, 'unit');
 
     if (dto.buildingId) {
       const building = await this.prisma.building.findFirst({
@@ -77,6 +80,7 @@ export class UnitsService {
           depositAmount: dto.depositAmount,
           description: dto.description,
           amenities: dto.amenities ?? [],
+          isPubliclyListable: dto.isPubliclyListable,
         },
       });
 
@@ -98,12 +102,7 @@ export class UnitsService {
     }
   }
 
-  async findAll(
-    userId: string,
-    organizationId: string,
-    propertyId: string,
-    query: QueryUnitsDto,
-  ) {
+  async findAll(userId: string, organizationId: string, propertyId: string, query: QueryUnitsDto) {
     await this.organizations.assertMembership(userId, organizationId);
     await this.getOwnedProperty(organizationId, propertyId);
 

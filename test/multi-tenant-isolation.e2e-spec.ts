@@ -75,7 +75,7 @@ describe('Multi-tenant isolation (e2e)', () => {
     expect([403, 404]).toContain(res.status);
   });
 
-  it("rejects Org A reading a specific Org B property by ID", async () => {
+  it('rejects Org A reading a specific Org B property by ID', async () => {
     const res = await request(app.getHttpServer())
       .get(`/api/v1/organizations/${orgBId}/properties/${orgBPropertyId}`)
       .set('Authorization', `Bearer ${orgAToken}`);

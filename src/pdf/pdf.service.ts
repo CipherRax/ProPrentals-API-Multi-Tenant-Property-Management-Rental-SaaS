@@ -36,6 +36,12 @@ export interface StatementPdfData {
   }>;
 }
 
+export interface ReportPdfData {
+  title: string;
+  organizationName: string;
+  rows: Record<string, unknown>;
+}
+
 function formatMoney(amount: number, currency: string): string {
   return `${currency} ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -79,7 +85,10 @@ export class PdfService {
       row('Description: ', data.description);
 
       doc.moveDown(1);
-      doc.fontSize(16).font('Helvetica-Bold').text(`Amount Paid: ${formatMoney(data.amount, data.currency)}`);
+      doc
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text(`Amount Paid: ${formatMoney(data.amount, data.currency)}`);
 
       doc.moveDown(2);
       doc
@@ -87,6 +96,43 @@ export class PdfService {
         .fillColor('#888')
         .font('Helvetica')
         .text('This receipt was generated automatically by ProPrentals.', { align: 'center' });
+    });
+  }
+
+  async generateReportPdf(data: ReportPdfData): Promise<Buffer> {
+    return this.render((doc) => {
+      doc.fontSize(20).text(data.title, { align: 'center' });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor('#555').text(data.organizationName, { align: 'center' });
+      doc.moveDown(1.5);
+      doc.fillColor('#000').fontSize(12);
+
+      const entries = Object.entries(data.rows);
+      if (!entries.length) {
+        doc.text('No data to report.');
+        return;
+      }
+
+      const formatValue = (v: unknown): string => {
+        if (v === null || v === undefined) return '—';
+        if (Array.isArray(v) || (typeof v === 'object' && !(v instanceof Date))) {
+          return JSON.stringify(v);
+        }
+        return String(v);
+      };
+
+      for (let i = 0; i < entries.length; i += 1) {
+        const [key, value] = entries[i];
+        doc
+          .font('Helvetica-Bold')
+          .text(`${key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}: `, {
+            continued: true,
+            width: 260,
+          });
+        doc.font('Helvetica').text(formatValue(value));
+        doc.moveDown(0.4);
+        if (doc.y > 720) doc.addPage();
+      }
     });
   }
 
@@ -98,7 +144,11 @@ export class PdfService {
       doc.moveDown(1.5);
       doc.fillColor('#000').fontSize(12);
 
-      doc.font('Helvetica-Bold').text('Tenant: ', { continued: true }).font('Helvetica').text(data.tenantName);
+      doc
+        .font('Helvetica-Bold')
+        .text('Tenant: ', { continued: true })
+        .font('Helvetica')
+        .text(data.tenantName);
       doc
         .font('Helvetica-Bold')
         .text('Property / Unit: ', { continued: true })
@@ -111,7 +161,9 @@ export class PdfService {
         .text(`${formatDate(data.periodStart)} to ${formatDate(data.periodEnd)}`);
 
       doc.moveDown(1);
-      doc.font('Helvetica-Bold').text(`Opening Balance: ${formatMoney(data.openingBalance, data.currency)}`);
+      doc
+        .font('Helvetica-Bold')
+        .text(`Opening Balance: ${formatMoney(data.openingBalance, data.currency)}`);
       doc.moveDown(1);
 
       const colX = { date: 50, type: 130, desc: 260, amount: 400, balance: 480 };
@@ -123,11 +175,7 @@ export class PdfService {
       doc.text('Amount', colX.amount, tableTop, { width: 70, align: 'right' });
       doc.text('Balance', colX.balance, tableTop, { width: 70, align: 'right' });
       doc.moveDown(0.5);
-      doc
-        .moveTo(50, doc.y)
-        .lineTo(550, doc.y)
-        .strokeColor('#ccc')
-        .stroke();
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#ccc').stroke();
       doc.moveDown(0.3);
 
       doc.font('Helvetica').fontSize(9);
@@ -137,8 +185,14 @@ export class PdfService {
         doc.text(formatDate(entry.createdAt), colX.date, y, { width: 75 });
         doc.text(entry.entryType, colX.type, y, { width: 125 });
         doc.text(entry.description ?? '', colX.desc, y, { width: 135 });
-        doc.text(formatMoney(signedAmount, data.currency), colX.amount, y, { width: 70, align: 'right' });
-        doc.text(formatMoney(entry.runningBalance, data.currency), colX.balance, y, { width: 70, align: 'right' });
+        doc.text(formatMoney(signedAmount, data.currency), colX.amount, y, {
+          width: 70,
+          align: 'right',
+        });
+        doc.text(formatMoney(entry.runningBalance, data.currency), colX.balance, y, {
+          width: 70,
+          align: 'right',
+        });
         doc.moveDown(0.6);
 
         if (doc.y > 720) {
@@ -147,16 +201,14 @@ export class PdfService {
       }
 
       doc.moveDown(1);
-      doc
-        .moveTo(50, doc.y)
-        .lineTo(550, doc.y)
-        .strokeColor('#ccc')
-        .stroke();
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#ccc').stroke();
       doc.moveDown(0.5);
       doc
         .fontSize(12)
         .font('Helvetica-Bold')
-        .text(`Closing Balance: ${formatMoney(data.closingBalance, data.currency)}`, { align: 'right' });
+        .text(`Closing Balance: ${formatMoney(data.closingBalance, data.currency)}`, {
+          align: 'right',
+        });
     });
   }
 

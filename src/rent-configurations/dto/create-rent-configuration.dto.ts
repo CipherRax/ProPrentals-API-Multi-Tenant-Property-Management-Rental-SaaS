@@ -36,7 +36,9 @@ export class CreateRentConfigurationDto {
   @Min(0)
   gracePeriodDays?: number;
 
-  @ApiPropertyOptional({ description: 'Flat amount, or a percentage of rent if lateFeeIsPercentage is true' })
+  @ApiPropertyOptional({
+    description: 'Flat amount, or a percentage of rent if lateFeeIsPercentage is true',
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

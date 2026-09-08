@@ -74,4 +74,8 @@ export class CreatePropertyDto {
   @IsArray()
   @IsString({ each: true })
   amenities?: string[];
+
+  @ApiPropertyOptional({ description: 'Opt into the public marketplace at creation time' })
+  @IsOptional()
+  isPubliclyListable?: boolean;
 }

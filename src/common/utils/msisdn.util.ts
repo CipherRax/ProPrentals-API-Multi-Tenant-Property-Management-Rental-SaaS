@@ -13,7 +13,10 @@ export function normalizeMsisdn(rawInput: string): string {
     normalized = digitsOnly;
   } else if (digitsOnly.startsWith('0') && digitsOnly.length === 10) {
     normalized = `254${digitsOnly.slice(1)}`;
-  } else if ((digitsOnly.startsWith('7') || digitsOnly.startsWith('1')) && digitsOnly.length === 9) {
+  } else if (
+    (digitsOnly.startsWith('7') || digitsOnly.startsWith('1')) &&
+    digitsOnly.length === 9
+  ) {
     normalized = `254${digitsOnly}`;
   } else {
     throw new BadRequestException(

@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UnitType } from '@prisma/client';
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
@@ -21,6 +22,7 @@ export class CreateUnitDto {
   unitNumber: string;
 
   @ApiProperty({ enum: UnitType })
+  @IsEnum(UnitType)
   unitType: UnitType;
 
   @ApiPropertyOptional()
@@ -66,4 +68,8 @@ export class CreateUnitDto {
   @IsArray()
   @IsString({ each: true })
   amenities?: string[];
+
+  @ApiPropertyOptional({ description: 'Opt into the public marketplace at creation time' })
+  @IsOptional()
+  isPubliclyListable?: boolean;
 }

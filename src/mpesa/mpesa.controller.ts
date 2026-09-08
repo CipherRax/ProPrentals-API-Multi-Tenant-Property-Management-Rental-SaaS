@@ -21,7 +21,12 @@ export class MpesaController {
     @Param('tenancyId') tenancyId: string,
     @Body() dto: InitiateStkPushDto,
   ) {
-    return this.mpesaPaymentsService.initiateForOrganization(userId, organizationId, tenancyId, dto);
+    return this.mpesaPaymentsService.initiateForOrganization(
+      userId,
+      organizationId,
+      tenancyId,
+      dto,
+    );
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })

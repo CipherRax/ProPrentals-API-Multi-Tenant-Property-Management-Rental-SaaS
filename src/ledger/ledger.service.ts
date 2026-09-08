@@ -1,16 +1,17 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { LedgerEntryDirection, LedgerEntryType, OrgRole, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { AuditService } from '../common/utils/audit.service';
-<<<<<<< HEAD
-import { CreateAdjustmentDto } from './dto/create-adjustment.dto';
-import { QueryLedgerDto } from './dto/query-ledger.dto';
-=======
 import { PdfService } from '../pdf/pdf.service';
 import { CreateAdjustmentDto } from './dto/create-adjustment.dto';
 import { QueryLedgerDto, resolvePeriod } from './dto/query-ledger.dto';
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
 const MANAGE_ROLES: OrgRole[] = ['OWNER', 'PROPERTY_MANAGER', 'ACCOUNTANT'];
 
@@ -24,10 +25,7 @@ interface PostEntryParams {
   amount: number | Prisma.Decimal;
   description?: string;
   relatedRentChargeId?: string;
-<<<<<<< HEAD
-=======
   relatedPaymentId?: string;
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
   createdByUserId?: string;
 }
 
@@ -37,10 +35,7 @@ export class LedgerService {
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
     private readonly audit: AuditService,
-<<<<<<< HEAD
-=======
     private readonly pdf: PdfService,
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
   ) {}
 
   // ── Core primitive, used both standalone and inside other modules'
@@ -58,10 +53,7 @@ export class LedgerService {
         amount: params.amount,
         description: params.description,
         relatedRentChargeId: params.relatedRentChargeId,
-<<<<<<< HEAD
-=======
         relatedPaymentId: params.relatedPaymentId,
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
         createdByUserId: params.createdByUserId,
       },
     });
@@ -86,7 +78,12 @@ export class LedgerService {
     return debit - credit;
   }
 
-  async getStatement(userId: string, organizationId: string, tenancyId: string, query: QueryLedgerDto) {
+  async getStatement(
+    userId: string,
+    organizationId: string,
+    tenancyId: string,
+    query: QueryLedgerDto,
+  ) {
     await this.organizations.assertMembership(userId, organizationId);
     return this.buildStatement(organizationId, tenancyId, query);
   }
@@ -99,9 +96,12 @@ export class LedgerService {
     return this.buildStatement(tenancy.organizationId, tenancyId, query);
   }
 
-<<<<<<< HEAD
-=======
-  async getStatementPdf(userId: string, organizationId: string, tenancyId: string, query: QueryLedgerDto) {
+  async getStatementPdf(
+    userId: string,
+    organizationId: string,
+    tenancyId: string,
+    query: QueryLedgerDto,
+  ) {
     await this.organizations.assertMembership(userId, organizationId);
     return this.renderStatementPdf(organizationId, tenancyId, query);
   }
@@ -114,7 +114,11 @@ export class LedgerService {
     return this.renderStatementPdf(tenancy.organizationId, tenancyId, query);
   }
 
-  private async renderStatementPdf(organizationId: string, tenancyId: string, query: QueryLedgerDto) {
+  private async renderStatementPdf(
+    organizationId: string,
+    tenancyId: string,
+    query: QueryLedgerDto,
+  ) {
     const [statement, context] = await Promise.all([
       this.buildStatement(organizationId, tenancyId, query),
       this.prisma.tenancy.findFirst({
@@ -149,19 +153,15 @@ export class LedgerService {
     });
   }
 
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
   private async buildStatement(organizationId: string, tenancyId: string, query: QueryLedgerDto) {
-    const tenancy = await this.prisma.tenancy.findFirst({ where: { id: tenancyId, organizationId } });
+    const tenancy = await this.prisma.tenancy.findFirst({
+      where: { id: tenancyId, organizationId },
+    });
     if (!tenancy) throw new NotFoundException('Tenancy not found');
 
-<<<<<<< HEAD
-    const from = query.from ? new Date(query.from) : tenancy.startDate;
-    const to = query.to ? new Date(query.to) : new Date();
-=======
     const resolved = resolvePeriod(query);
     const from = resolved.from ? new Date(resolved.from) : tenancy.startDate;
     const to = resolved.to ? new Date(resolved.to) : new Date();
->>>>>>> 4ea4411 (PHASE 7: Receipts & Tenant Statements)
 
     const [openingTotals, periodEntries] = await Promise.all([
       this.prisma.ledgerEntry.groupBy({
@@ -175,12 +175,17 @@ export class LedgerService {
       }),
     ]);
 
-    const openingDebit = Number(openingTotals.find((t) => t.direction === 'DEBIT')?._sum.amount ?? 0);
-    const openingCredit = Number(openingTotals.find((t) => t.direction === 'CREDIT')?._sum.amount ?? 0);
+    const openingDebit = Number(
+      openingTotals.find((t) => t.direction === 'DEBIT')?._sum.amount ?? 0,
+    );
+    const openingCredit = Number(
+      openingTotals.find((t) => t.direction === 'CREDIT')?._sum.amount ?? 0,
+    );
     let runningBalance = openingDebit - openingCredit;
 
     const entries = periodEntries.map((entry) => {
-      const signedAmount = entry.direction === 'DEBIT' ? Number(entry.amount) : -Number(entry.amount);
+      const signedAmount =
+        entry.direction === 'DEBIT' ? Number(entry.amount) : -Number(entry.amount);
       runningBalance += signedAmount;
       return { ...entry, signedAmount, runningBalance };
     });
@@ -197,7 +202,9 @@ export class LedgerService {
 
   async listEntries(userId: string, organizationId: string, tenancyId: string) {
     await this.organizations.assertMembership(userId, organizationId);
-    const tenancy = await this.prisma.tenancy.findFirst({ where: { id: tenancyId, organizationId } });
+    const tenancy = await this.prisma.tenancy.findFirst({
+      where: { id: tenancyId, organizationId },
+    });
     if (!tenancy) throw new NotFoundException('Tenancy not found');
 
     return this.prisma.ledgerEntry.findMany({
@@ -221,7 +228,9 @@ export class LedgerService {
       );
     }
 
-    const tenancy = await this.prisma.tenancy.findFirst({ where: { id: tenancyId, organizationId } });
+    const tenancy = await this.prisma.tenancy.findFirst({
+      where: { id: tenancyId, organizationId },
+    });
     if (!tenancy) throw new NotFoundException('Tenancy not found');
 
     const entry = await this.prisma.$transaction((tx) =>
@@ -260,7 +269,9 @@ export class LedgerService {
   async reverseEntry(userId: string, organizationId: string, entryId: string) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     if (!MANAGE_ROLES.includes(membership.role)) {
-      throw new ForbiddenException('Only owners, property managers, or accountants can reverse ledger entries');
+      throw new ForbiddenException(
+        'Only owners, property managers, or accountants can reverse ledger entries',
+      );
     }
 
     const original = await this.prisma.ledgerEntry.findFirst({

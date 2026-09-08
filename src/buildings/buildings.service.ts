@@ -41,12 +41,7 @@ export class BuildingsService {
     return building;
   }
 
-  async create(
-    userId: string,
-    organizationId: string,
-    propertyId: string,
-    dto: CreateBuildingDto,
-  ) {
+  async create(userId: string, organizationId: string, propertyId: string, dto: CreateBuildingDto) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     this.assertCanManage(membership.role);
     await this.getOwnedProperty(organizationId, propertyId);
