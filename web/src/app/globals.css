@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  * {
+    border-color: theme('colors.ink.100');
+  }
+
+  body {
+    @apply bg-[#f4f5f7] text-ink-800 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-ink-100 bg-surface shadow-card;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-700 text-white hover:bg-brand-800;
+  }
+
+  .btn-secondary {
+    @apply btn border border-ink-200 bg-surface text-ink-700 hover:bg-ink-50;
+  }
+
+  .btn-ghost {
+    @apply btn text-ink-600 hover:bg-ink-100;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-ink-200 bg-surface px-3 py-2 text-sm text-ink-800 shadow-sm placeholder:text-ink-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink-600;
+  }
+
+  .field-error {
+    @apply mt-1 text-sm text-red-600;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+
+  .th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-400;
+  }
+
+  .td {
+    @apply px-4 py-3 text-sm text-ink-700;
+  }
+
+  .table-row {
+    @apply border-t border-ink-100 transition-colors hover:bg-ink-50/60;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-500 transition-colors hover:bg-ink-100/70 hover:text-ink-800;
+  }
+
+  .nav-link-active {
+    @apply bg-brand-50 text-brand-800 hover:bg-brand-50 hover:text-brand-800;
+  }
+}
