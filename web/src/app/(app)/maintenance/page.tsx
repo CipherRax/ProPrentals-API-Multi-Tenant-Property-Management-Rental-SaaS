@@ -64,8 +64,8 @@ export default function MaintenancePage() {
                 header: 'Request',
                 render: (m) => (
                   <div>
-                    <div className="font-medium text-ink-800">{m.title}</div>
-                    <div className="line-clamp-1 max-w-md text-xs text-ink-400">
+                    <div className="font-medium text-paper-800">{m.title}</div>
+                    <div className="line-clamp-1 max-w-md text-xs text-paper-400">
                       {m.description}
                     </div>
                   </div>
@@ -74,13 +74,13 @@ export default function MaintenancePage() {
               {
                 key: 'tenant',
                 header: 'Tenant',
-                render: (m) => <span className="text-ink-600">{m.tenant?.fullName || '—'}</span>,
+                render: (m) => <span className="text-paper-600">{m.tenant?.fullName || '—'}</span>,
               },
               {
                 key: 'category',
                 header: 'Category',
                 render: (m) => (
-                  <span className="text-ink-600">{titleCase(m.category.toLowerCase())}</span>
+                  <span className="text-paper-600">{titleCase(m.category.toLowerCase())}</span>
                 ),
               },
               {
@@ -96,7 +96,7 @@ export default function MaintenancePage() {
               {
                 key: 'createdAt',
                 header: 'Created',
-                render: (m) => <span className="text-ink-600">{formatDateTime(m.createdAt)}</span>,
+                render: (m) => <span className="text-paper-600">{formatDateTime(m.createdAt)}</span>,
               },
             ]}
             rows={items}

@@ -37,20 +37,20 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-ink-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full ${widths[size]} rounded-xl bg-surface shadow-lift`}>
-        <div className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
-          <h2 className="text-base font-semibold text-ink-800">{title}</h2>
+      <div className="absolute inset-0 bg-paper-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative z-10 w-full ${widths[size]} rounded-card bg-white shadow-card-hover`}>
+        <div className="flex items-center justify-between border-b border-paper-100 px-5 py-4">
+          <h2 className="text-base font-semibold text-paper-800">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-600"
+            className="rounded-md p-1 text-paper-400 hover:bg-paper-100 hover:text-paper-600"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="max-h-[70vh] overflow-y-auto px-5 py-5">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-ink-100 px-5 py-4">{footer}</div>
+          <div className="flex justify-end gap-2 border-t border-paper-100 px-5 py-4">{footer}</div>
         )}
       </div>
     </div>
@@ -97,7 +97,7 @@ export function ConfirmModal({
         </>
       }
     >
-      <p className="text-sm text-ink-600">{message}</p>
+      <p className="text-sm text-paper-600">{message}</p>
     </Modal>
   );
 }

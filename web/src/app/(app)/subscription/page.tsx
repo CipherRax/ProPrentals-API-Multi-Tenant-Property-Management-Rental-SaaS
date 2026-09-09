@@ -83,16 +83,16 @@ export default function SubscriptionPage() {
     <div>
       <PageHeader title="Subscription" description="Your organization's plan and usage" />
 
-      <div className="mb-8 rounded-xl border border-brand-200 bg-brand-50/40 p-5">
+      <div className="mb-8 rounded-card border border-brand-200 bg-brand-50/40 p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-sm font-medium text-brand-800">Current plan</div>
-            <div className="text-2xl font-semibold text-ink-900">
+            <div className="text-2xl font-semibold text-paper-900">
               {sub?.plan?.name ?? sub?.tier ?? '—'}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-ink-500">Status</div>
+            <div className="text-sm text-paper-500">Status</div>
             <StatusBadge status={sub?.status} />
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function SubscriptionPage() {
         )}
       </div>
 
-      <h2 className="mb-4 text-sm font-semibold text-ink-800">Available plans</h2>
+      <h2 className="mb-4 text-sm font-semibold text-paper-800">Available plans</h2>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan) => {
           const current = plan.tier === sub?.tier;
@@ -115,23 +115,23 @@ export default function SubscriptionPage() {
               className={`card flex flex-col p-5 ${current ? 'border-brand-400 ring-1 ring-brand-400' : ''}`}
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold text-ink-900">{plan.name}</h3>
+                <h3 className="text-base font-semibold text-paper-900">{plan.name}</h3>
                 {current && <span className="badge bg-brand-600 text-white">Current</span>}
               </div>
-              <div className="mt-2 text-2xl font-semibold text-ink-900">
+              <div className="mt-2 text-2xl font-semibold text-paper-900">
                 {formatMoney(plan.priceMonthly, currency)}
-                <span className="text-sm font-normal text-ink-400">/mo</span>
+                <span className="text-sm font-normal text-paper-400">/mo</span>
               </div>
-              <p className="mt-2 text-sm text-ink-500">{plan.description}</p>
+              <p className="mt-2 text-sm text-paper-500">{plan.description}</p>
               <ul className="mt-4 flex-1 space-y-2">
                 {(plan.features ?? []).slice(0, 5).map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-ink-600">
+                  <li key={i} className="flex items-start gap-2 text-sm text-paper-600">
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
                     {f}
                   </li>
                 ))}
               </ul>
-              <div className="mt-4 text-xs text-ink-400">
+              <div className="mt-4 text-xs text-paper-400">
                 {plan.maxProperties ?? '∞'} properties · {plan.maxUnits ?? '∞'} units ·{' '}
                 {plan.maxTenants ?? '∞'} tenants · {plan.maxStaff ?? '∞'} staff
               </div>
@@ -163,7 +163,7 @@ export default function SubscriptionPage() {
           </>
         }
       >
-        <p className="text-sm text-ink-600">
+        <p className="text-sm text-paper-600">
           You&apos;ll be moved to the {changeTo?.name} plan. Your account will be checked against the new
           plan&apos;s limits before the change is applied.
         </p>
@@ -177,13 +177,13 @@ function Usage({ label, value, max }: { label: string; value: number; max: numbe
   const pct = limit > 0 ? Math.min(100, Math.round((value / limit) * 100)) : 0;
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs text-ink-500">
+      <div className="mb-1 flex items-center justify-between text-xs text-paper-500">
         <span className="font-medium">{label}</span>
         <span>
           {value} / {limit === Infinity ? '∞' : limit}
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-ink-100">
+      <div className="h-1.5 w-full rounded-full bg-paper-100">
         <div
           className={`h-full rounded-full ${pct >= 100 ? 'bg-red-500' : 'bg-brand-600'}`}
           style={{ width: `${pct}%` }}

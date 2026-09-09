@@ -34,17 +34,17 @@ export default function LoginPage() {
       <div className="flex flex-1 items-center justify-center bg-[#f4f5f7] px-6">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-700 text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-card bg-brand-700 text-white">
               <Home className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-lg font-semibold tracking-tight text-ink-900">ProPrentals</div>
-              <div className="text-xs text-ink-400">Property Management Platform</div>
+              <div className="text-lg font-semibold tracking-tight text-paper-900">ProPrentals</div>
+              <div className="text-xs text-paper-400">Property Management Platform</div>
             </div>
           </div>
 
-          <h1 className="text-xl font-semibold tracking-tight text-ink-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-ink-500">
+          <h1 className="text-xl font-semibold tracking-tight text-paper-900">Welcome back</h1>
+          <p className="mt-1 text-sm text-paper-500">
             Sign in to manage your properties and tenants.
           </p>
 
@@ -54,7 +54,7 @@ export default function LoginPage() {
                 Email
               </label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
                 <input
                   id="email"
                   type="email"
@@ -72,10 +72,12 @@ export default function LoginPage() {
                 <label className="label mb-1.5" htmlFor="password">
                   Password
                 </label>
-                <span className="mb-1.5 text-xs text-ink-400">Forgot your password?</span>
+                <Link href="/forgot-password" className="mb-1.5 text-xs font-medium text-brand-700 hover:text-brand-800">
+                  Forgot your password?
+                </Link>
               </div>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
                 <input
                   id="password"
                   type="password"
@@ -94,18 +96,18 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-ink-500">
+          <p className="mt-6 text-center text-sm text-paper-500">
             New to ProPrentals?{' '}
             <Link href="/register" className="font-medium text-brand-700 hover:text-brand-800">
               Create an account
             </Link>
           </p>
 
-          <div className="mt-8 rounded-lg border border-ink-100 bg-surface p-3 text-center">
-            <p className="text-xs text-ink-500">
+          <div className="mt-8 rounded-lg border border-paper-100 bg-white p-3 text-center">
+            <p className="text-xs text-paper-500">
               Demo access ·{' '}
-              <span className="font-medium text-ink-700">owner@demo-landlord.app</span> /{' '}
-              <span className="font-medium text-ink-700">DemoOwner@123</span>
+              <span className="font-medium text-paper-700">owner@demo-landlord.app</span> /{' '}
+              <span className="font-medium text-paper-700">DemoOwner@123</span>
             </p>
           </div>
         </div>

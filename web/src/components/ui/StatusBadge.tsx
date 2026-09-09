@@ -8,7 +8,7 @@ const tones: Record<string, { bg: string; text: string; dot?: string }> = {
   amber: { bg: 'bg-amber-50', text: 'text-amber-700' },
   red: { bg: 'bg-red-50', text: 'text-red-700' },
   blue: { bg: 'bg-sky-50', text: 'text-sky-700' },
-  gray: { bg: 'bg-ink-100', text: 'text-ink-600' },
+  gray: { bg: 'bg-paper-100', text: 'text-paper-600' },
   brand: { bg: 'bg-brand-50', text: 'text-brand-700' },
   purple: { bg: 'bg-violet-50', text: 'text-violet-700' },
 };

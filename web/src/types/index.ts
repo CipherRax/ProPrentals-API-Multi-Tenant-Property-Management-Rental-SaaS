@@ -322,6 +322,9 @@ export interface Payment {
   manualReference?: string | null;
   notes?: string | null;
   paidAt?: string | null;
+  failureReason?: string | null;
+  providerTransactionId?: string | null;
+  phoneNumber?: string | null;
   createdAt: string;
   reference?: string | null;
   tenancy?: { id: string; tenant?: { fullName: string }; unit?: { unitNumber: string } };

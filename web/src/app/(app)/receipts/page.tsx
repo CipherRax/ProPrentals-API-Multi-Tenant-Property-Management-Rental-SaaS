@@ -80,15 +80,15 @@ export default function ReceiptsPage() {
               {
                 key: 'receiptNumber',
                 header: 'Receipt',
-                render: (r) => <span className="font-medium text-ink-800">{r.receiptNumber}</span>,
+                render: (r) => <span className="font-medium text-paper-800">{r.receiptNumber}</span>,
               },
               {
                 key: 'tenant',
                 header: 'Tenant',
                 render: (r) => (
                   <div>
-                    <div className="text-ink-800">{r.tenancy?.tenant?.fullName || '—'}</div>
-                    <div className="text-xs text-ink-400">
+                    <div className="text-paper-800">{r.tenancy?.tenant?.fullName || '—'}</div>
+                    <div className="text-xs text-paper-400">
                       Unit {r.tenancy?.unit?.unitNumber || '—'}
                     </div>
                   </div>
@@ -98,7 +98,7 @@ export default function ReceiptsPage() {
                 key: 'amount',
                 header: 'Amount',
                 render: (r) => (
-                  <span className="font-medium text-ink-800">
+                  <span className="font-medium text-paper-800">
                     {formatMoney(r.amount, currency)}
                   </span>
                 ),
@@ -106,7 +106,7 @@ export default function ReceiptsPage() {
               {
                 key: 'issuedAt',
                 header: 'Issued',
-                render: (r) => <span className="text-ink-600">{formatDateTime(r.issuedAt)}</span>,
+                render: (r) => <span className="text-paper-600">{formatDateTime(r.issuedAt)}</span>,
               },
               {
                 key: 'actions',

@@ -110,26 +110,26 @@ export default function NotificationsPage() {
               description="New notifications about rent, payments, and messages will appear here."
             />
           ) : (
-            <div className="card divide-y divide-ink-100">
+            <div className="surface divide-y divide-paper-100">
               {items.map((n) => (
                 <button
                   key={n.id}
                   onClick={() => !n.read && markRead(n.id)}
-                  className={`flex w-full items-start gap-3 px-5 py-4 text-left hover:bg-ink-50/60 ${
+                  className={`flex w-full items-start gap-3 px-5 py-4 text-left hover:bg-paper-50/60 ${
                     !n.read ? 'bg-brand-50/30' : ''
                   }`}
                 >
                   <span
                     className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                      n.read ? 'bg-ink-200' : 'bg-brand-600'
+                      n.read ? 'bg-paper-200' : 'bg-brand-600'
                     }`}
                   />
                   <span className="flex-1">
-                    <span className="block text-sm font-medium text-ink-800">{n.title}</span>
+                    <span className="block text-sm font-medium text-paper-800">{n.title}</span>
                     {n.message && (
-                      <span className="mt-0.5 block text-sm text-ink-500">{n.message}</span>
+                      <span className="mt-0.5 block text-sm text-paper-500">{n.message}</span>
                     )}
-                    <span className="mt-1 block text-xs text-ink-400">
+                    <span className="mt-1 block text-xs text-paper-400">
                       {titleCase(n.category)} · {formatDateTime(n.createdAt)}
                     </span>
                   </span>
@@ -141,18 +141,18 @@ export default function NotificationsPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-ink-800">Preferences</h2>
-          <div className="card divide-y divide-ink-100">
+          <h2 className="mb-3 text-sm font-semibold text-paper-800">Preferences</h2>
+          <div className="surface divide-y divide-paper-100">
             {prefs.map((p) => (
               <div key={p.id} className="px-5 py-3">
-                <div className="text-sm font-medium capitalize text-ink-700">
+                <div className="text-sm font-medium capitalize text-paper-700">
                   {p.category.toLowerCase().replace(/_/g, ' ')}
                 </div>
                 <div className="mt-1 space-y-1">
                   {(['inAppEnabled', 'emailEnabled', 'smsEnabled'] as const).map((field) => (
                     <label
                       key={field}
-                      className="flex items-center justify-between text-xs text-ink-500"
+                      className="flex items-center justify-between text-xs text-paper-500"
                     >
                       <span className="capitalize">
                         {field
@@ -164,7 +164,7 @@ export default function NotificationsPage() {
                         type="checkbox"
                         checked={p[field]}
                         onChange={(e) => togglePref(p, field, e.target.checked)}
-                        className="h-4 w-4 rounded border-ink-300 text-brand-700 focus:ring-brand-500"
+                        className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
                       />
                     </label>
                   ))}

@@ -124,10 +124,10 @@ export default function PaymentsPage() {
                 header: 'Tenant',
                 render: (p) => (
                   <div>
-                    <div className="font-medium text-ink-800">
+                    <div className="font-medium text-paper-800">
                       {p.tenancy?.tenant?.fullName || '—'}
                     </div>
-                    <div className="text-xs text-ink-400">
+                    <div className="text-xs text-paper-400">
                       Unit {p.tenancy?.unit?.unitNumber || '—'}
                     </div>
                   </div>
@@ -137,7 +137,7 @@ export default function PaymentsPage() {
                 key: 'amount',
                 header: 'Amount',
                 render: (p) => (
-                  <span className="font-medium text-ink-800">
+                  <span className="font-medium text-paper-800">
                     {formatMoney(p.amount, currency)}
                   </span>
                 ),
@@ -146,7 +146,7 @@ export default function PaymentsPage() {
                 key: 'method',
                 header: 'Method',
                 render: (p) => (
-                  <span className="capitalize text-ink-600">
+                  <span className="capitalize text-paper-600">
                     {p.method.toLowerCase().replace(/_/g, ' ')}
                   </span>
                 ),
@@ -160,7 +160,7 @@ export default function PaymentsPage() {
                 key: 'paidAt',
                 header: 'Paid',
                 render: (p) => (
-                  <span className="text-ink-600">{formatDateTime(p.paidAt || p.createdAt)}</span>
+                  <span className="text-paper-600">{formatDateTime(p.paidAt || p.createdAt)}</span>
                 ),
               },
             ]}

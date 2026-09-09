@@ -119,7 +119,7 @@ export default function PropertiesPage() {
 
       <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
           <input
             className="input pl-9"
             placeholder="Search properties…"
@@ -150,8 +150,8 @@ export default function PropertiesPage() {
                 header: 'Name',
                 render: (p) => (
                   <div>
-                    <div className="font-medium text-ink-800">{p.name}</div>
-                    <div className="text-xs text-ink-400">
+                    <div className="font-medium text-paper-800">{p.name}</div>
+                    <div className="text-xs text-paper-400">
                       {p.city || p.county || '—'} · {p._count?.units ?? 0} units
                     </div>
                   </div>
@@ -161,7 +161,7 @@ export default function PropertiesPage() {
                 key: 'propertyType',
                 header: 'Type',
                 render: (p) => (
-                  <span className="capitalize text-ink-600">
+                  <span className="capitalize text-paper-600">
                     {p.propertyType.toLowerCase().replace(/_/g, ' ')}
                   </span>
                 ),
@@ -281,12 +281,12 @@ export default function PropertiesPage() {
               onChange={(e) => update('description', e.target.value)}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-ink-600 sm:col-span-2">
+          <label className="flex items-center gap-2 text-sm text-paper-600 sm:col-span-2">
             <input
               type="checkbox"
               checked={form.isPubliclyListable}
               onChange={(e) => update('isPubliclyListable', e.target.checked)}
-              className="h-4 w-4 rounded border-ink-300 text-brand-700 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
             />
             Show in public marketplace
           </label>

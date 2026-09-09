@@ -153,19 +153,19 @@ export default function PropertyDetailPage() {
     <div>
       <Link
         href="/properties"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-700"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-paper-500 hover:text-paper-700"
       >
         <ArrowLeft className="h-4 w-4" /> Back to properties
       </Link>
 
-      <div className="card mb-6 p-6">
+      <div className="surface mb-6 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold tracking-tight text-ink-900">{property.name}</h1>
+              <h1 className="text-xl font-semibold tracking-tight text-paper-900">{property.name}</h1>
               <StatusBadge status={property.status} />
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-500">
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-paper-500">
               <span className="capitalize">
                 {property.propertyType.toLowerCase().replace(/_/g, ' ')}
               </span>
@@ -187,7 +187,7 @@ export default function PropertyDetailPage() {
               )}
             </div>
             {property.description && (
-              <p className="mt-3 max-w-2xl text-sm text-ink-500">{property.description}</p>
+              <p className="mt-3 max-w-2xl text-sm text-paper-500">{property.description}</p>
             )}
           </div>
           <div className="flex gap-2">
@@ -203,22 +203,22 @@ export default function PropertyDetailPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-ink-800">Buildings</h2>
+          <h2 className="mb-3 text-sm font-semibold text-paper-800">Buildings</h2>
           {buildings.length === 0 ? (
-            <div className="card px-5 py-8 text-center text-sm text-ink-400">
+            <div className="surface px-5 py-8 text-center text-sm text-paper-400">
               No buildings added yet.
             </div>
           ) : (
             <div className="space-y-3">
               {buildings.map((b) => (
-                <div key={b.id} className="card flex items-center justify-between px-5 py-4">
+                <div key={b.id} className="surface flex items-center justify-between px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink-100 text-ink-500">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-paper-100 text-paper-500">
                       <Building2 className="h-4 w-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-ink-800">{b.name}</div>
-                      <div className="text-xs text-ink-400">
+                      <div className="text-sm font-medium text-paper-800">{b.name}</div>
+                      <div className="text-xs text-paper-400">
                         {b.floors ? `${b.floors} floors` : '—'} · {b._count?.units ?? 0} units
                       </div>
                     </div>
@@ -230,27 +230,27 @@ export default function PropertyDetailPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-ink-800">Units</h2>
+          <h2 className="mb-3 text-sm font-semibold text-paper-800">Units</h2>
           {units.length === 0 ? (
-            <div className="card px-5 py-8 text-center text-sm text-ink-400">
+            <div className="surface px-5 py-8 text-center text-sm text-paper-400">
               No units yet. Add your first unit.
             </div>
           ) : (
             <div className="space-y-3">
               {units.map((u) => (
-                <div key={u.id} className="card flex items-center justify-between px-5 py-4">
+                <div key={u.id} className="surface flex items-center justify-between px-5 py-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
                       <DoorOpen className="h-4 w-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-ink-800">
+                      <div className="text-sm font-medium text-paper-800">
                         {u.unitNumber}{' '}
-                        <span className="text-xs font-normal capitalize text-ink-400">
+                        <span className="text-xs font-normal capitalize text-paper-400">
                           · {u.unitType.toLowerCase().replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <div className="text-xs text-ink-400">
+                      <div className="text-xs text-paper-400">
                         {u.bedrooms ? `${u.bedrooms} bd · ` : ''}
                         {formatMoney(u.baseRent, currency)}/mo
                       </div>
@@ -377,12 +377,12 @@ export default function PropertyDetailPage() {
               onChange={(e) => uf_update('depositAmount', e.target.value)}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-ink-600 sm:col-span-2">
+          <label className="flex items-center gap-2 text-sm text-paper-600 sm:col-span-2">
             <input
               type="checkbox"
               checked={unitForm.isPubliclyListable}
               onChange={(e) => uf_update('isPubliclyListable', e.target.checked)}
-              className="h-4 w-4 rounded border-ink-300 text-brand-700 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
             />
             List in public marketplace
           </label>

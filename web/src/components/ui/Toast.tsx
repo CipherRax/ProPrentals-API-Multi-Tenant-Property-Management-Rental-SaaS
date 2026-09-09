@@ -16,12 +16,12 @@ export function Toast({
   const styles: Record<ToastType, string> = {
     success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
     error: 'border-red-200 bg-red-50 text-red-800',
-    info: 'border-ink-200 bg-surface text-ink-700',
+    info: 'border-paper-200 bg-white text-paper-700',
   };
   const Icon = type === 'success' ? CheckCircle2 : type === 'error' ? AlertCircle : Info;
   return (
     <div
-      className={`pointer-events-auto flex w-full items-start gap-3 rounded-lg border px-4 py-3 shadow-card ${styles[type]}`}
+      className={`pointer-events-auto flex w-full items-start gap-3 rounded-lg border px-4 py-3 shadow-panel ${styles[type]}`}
     >
       <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center">
         <div className="rounded-full bg-white/70 p-0.5">

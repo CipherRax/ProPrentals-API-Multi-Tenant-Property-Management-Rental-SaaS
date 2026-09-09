@@ -78,8 +78,8 @@ export default function InquiriesPage() {
 
   if (!allowed) {
     return (
-      <div className="card p-10 text-center">
-        <p className="text-sm text-ink-500">
+      <div className="surface p-10 text-center">
+        <p className="text-sm text-paper-500">
           Inquiries are available to Owners, Managers, and Staff.
         </p>
       </div>
@@ -107,8 +107,8 @@ export default function InquiriesPage() {
                 header: 'Contact',
                 render: (i) => (
                   <div>
-                    <div className="font-medium text-ink-800">{i.name}</div>
-                    <div className="text-xs text-ink-400">{i.email}</div>
+                    <div className="font-medium text-paper-800">{i.name}</div>
+                    <div className="text-xs text-paper-400">{i.email}</div>
                   </div>
                 ),
               },
@@ -116,7 +116,7 @@ export default function InquiriesPage() {
                 key: 'property',
                 header: 'Property',
                 render: (i) => (
-                  <div className="text-ink-600">
+                  <div className="text-paper-600">
                     {i.property?.name ?? '—'}
                     {i.unit ? ` · ${i.unit.unitNumber}` : ''}
                   </div>
@@ -130,7 +130,7 @@ export default function InquiriesPage() {
               {
                 key: 'createdAt',
                 header: 'Received',
-                render: (i) => <span className="text-ink-600">{formatDateTime(i.createdAt)}</span>,
+                render: (i) => <span className="text-paper-600">{formatDateTime(i.createdAt)}</span>,
               },
             ]}
             rows={items}
@@ -159,16 +159,16 @@ export default function InquiriesPage() {
         {selected && (
           <div className="space-y-4 text-sm">
             <div className="space-y-1">
-              <p className="text-ink-500">
+              <p className="text-paper-500">
                 {selected.email}
                 {selected.phone ? ` · ${selected.phone}` : ''}
               </p>
-              <p className="text-ink-700">
+              <p className="text-paper-700">
                 {selected.property?.name ?? 'Property'}{' '}
                 {selected.unit ? `· Unit ${selected.unit.unitNumber}` : ''}
               </p>
             </div>
-            <div className="rounded-lg bg-ink-50/60 p-4 text-ink-700">{selected.message}</div>
+            <div className="rounded-lg bg-paper-50/60 p-4 text-paper-700">{selected.message}</div>
             <div>
               <label className="label">Status</label>
               <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>

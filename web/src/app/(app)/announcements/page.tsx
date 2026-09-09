@@ -112,8 +112,8 @@ export default function AnnouncementsPage() {
                 header: 'Announcement',
                 render: (a) => (
                   <div>
-                    <div className="font-medium text-ink-800">{a.title}</div>
-                    <div className="line-clamp-1 max-w-md text-xs text-ink-400">{a.message}</div>
+                    <div className="font-medium text-paper-800">{a.title}</div>
+                    <div className="line-clamp-1 max-w-md text-xs text-paper-400">{a.message}</div>
                   </div>
                 ),
               },
@@ -121,7 +121,7 @@ export default function AnnouncementsPage() {
                 key: 'audience',
                 header: 'Audience',
                 render: (a) => (
-                  <span className="text-ink-600">
+                  <span className="text-paper-600">
                     {a.audience.toLowerCase().replace(/_/g, ' ')}
                   </span>
                 ),
@@ -129,7 +129,7 @@ export default function AnnouncementsPage() {
               {
                 key: 'createdAt',
                 header: 'Created',
-                render: (a) => <span className="text-ink-600">{formatDateTime(a.createdAt)}</span>,
+                render: (a) => <span className="text-paper-600">{formatDateTime(a.createdAt)}</span>,
               },
             ]}
             rows={items}

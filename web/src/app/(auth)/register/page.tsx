@@ -42,14 +42,14 @@ export default function RegisterPage() {
       <div className="flex flex-1 items-center justify-center bg-[#f4f5f7] px-6 py-10">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-700 text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-card bg-brand-700 text-white">
               <Home className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-lg font-semibold tracking-tight text-ink-900">
+              <div className="text-lg font-semibold tracking-tight text-paper-900">
                 Create your account
               </div>
-              <div className="text-xs text-ink-400">Start managing your properties in minutes</div>
+              <div className="text-xs text-paper-400">Start managing your properties in minutes</div>
             </div>
           </div>
 
@@ -60,7 +60,7 @@ export default function RegisterPage() {
                   First name
                 </label>
                 <div className="relative">
-                  <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+                  <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
                   <input
                     id="firstName"
                     required
@@ -89,7 +89,7 @@ export default function RegisterPage() {
                 Organization name
               </label>
               <div className="relative">
-                <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+                <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
                 <input
                   id="org"
                   required
@@ -106,7 +106,7 @@ export default function RegisterPage() {
                 Email
               </label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
                 <input
                   id="email"
                   type="email"
@@ -123,7 +123,7 @@ export default function RegisterPage() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
                 <input
                   id="password"
                   type="password"
@@ -143,7 +143,7 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-ink-500">
+          <p className="mt-6 text-center text-sm text-paper-500">
             Already have an account?{' '}
             <Link href="/login" className="font-medium text-brand-700 hover:text-brand-800">
               Sign in

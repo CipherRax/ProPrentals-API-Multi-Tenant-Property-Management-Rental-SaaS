@@ -27,7 +27,7 @@ export function Pagination({
   };
 
   return (
-    <div className="mt-4 flex items-center justify-between text-sm text-ink-500">
+    <div className="mt-4 flex items-center justify-between text-sm text-paper-500">
       <span>
         Page {meta.page} of {meta.totalPages} · {meta.total} results
       </span>

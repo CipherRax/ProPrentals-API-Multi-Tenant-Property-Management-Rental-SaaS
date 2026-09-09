@@ -75,8 +75,8 @@ export default function ReportsPage() {
 
   if (!allowed) {
     return (
-      <div className="card p-10 text-center">
-        <p className="text-sm text-ink-500">
+      <div className="surface p-10 text-center">
+        <p className="text-sm text-paper-500">
           Reports are available to Owners, Property Managers, and Accountants.
         </p>
       </div>
@@ -105,13 +105,13 @@ export default function ReportsPage() {
         }
       />
 
-      <div className="mb-6 flex gap-1 rounded-lg border border-ink-100 bg-surface p-1">
+      <div className="mb-6 flex gap-1 rounded-lg border border-paper-100 bg-white p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              tab === t.key ? 'bg-brand-700 text-white' : 'text-ink-500 hover:text-ink-700'
+              tab === t.key ? 'bg-brand-700 text-white' : 'text-paper-500 hover:text-paper-700'
             }`}
           >
             {t.label}
@@ -226,11 +226,11 @@ function Metric({
     <div className={`card p-5 ${accent ? 'border-brand-200 bg-brand-50/40' : ''}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-ink-500">{label}</p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-ink-900">{value}</p>
+          <p className="text-sm font-medium text-paper-500">{label}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-paper-900">{value}</p>
         </div>
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-lg ${accent ? 'bg-brand-700 text-white' : 'bg-ink-100 text-ink-500'}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-lg ${accent ? 'bg-brand-700 text-white' : 'bg-paper-100 text-paper-500'}`}
         >
           {icon}
         </div>

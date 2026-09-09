@@ -75,16 +75,16 @@ export default function PublicPage() {
 
   return (
     <div className="min-h-screen bg-[#f4f5f7]">
-      <header className="sticky top-0 z-20 border-b border-ink-100 bg-surface/80 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-paper-100 bg-white/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link href="/public" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700 text-white">
               <Home className="h-4 w-4" />
             </div>
-            <span className="text-sm font-semibold text-ink-900">ProPrentals</span>
+            <span className="text-sm font-semibold text-paper-900">ProPrentals</span>
           </Link>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-ink-400">Browse available rentals</span>
+            <span className="text-xs text-paper-400">Browse available rentals</span>
             {user ? (
               <Link href="/dashboard" className="btn-primary py-1.5">
                 Go to dashboard
@@ -108,7 +108,7 @@ export default function PublicPage() {
           </p>
           <div className="mt-6 flex max-w-2xl flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-400" />
               <input
                 className="input py-2.5 pl-9"
                 placeholder="Search by city, county, or neighborhood…"
@@ -119,7 +119,7 @@ export default function PublicPage() {
             </div>
             <div className="flex gap-2">
               <div className="relative">
-                <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-400" />
                 <input
                   className="input py-2.5 pl-9 sm:w-36"
                   placeholder="County"
@@ -170,10 +170,10 @@ export default function PublicPage() {
         {loading && items.length === 0 ? (
           <PageLoader />
         ) : items.length === 0 ? (
-          <div className="card px-6 py-16 text-center">
+          <div className="surface px-6 py-16 text-center">
             <div className="text-4xl">🏠</div>
-            <h2 className="mt-3 text-base font-semibold text-ink-800">No listings found</h2>
-            <p className="mt-1 text-sm text-ink-500">Try adjusting your search or filters.</p>
+            <h2 className="mt-3 text-base font-semibold text-paper-800">No listings found</h2>
+            <p className="mt-1 text-sm text-paper-500">Try adjusting your search or filters.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -181,9 +181,9 @@ export default function PublicPage() {
               <button
                 key={l.id}
                 onClick={() => setSelected(l)}
-                className="card overflow-hidden text-left transition-shadow hover:shadow-lift"
+                className="surface overflow-hidden text-left transition-shadow hover:shadow-card-hover"
               >
-                <div className="flex h-40 items-center justify-center bg-ink-100">
+                <div className="flex h-40 items-center justify-center bg-paper-100">
                   {l.images && l.images[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -192,28 +192,28 @@ export default function PublicPage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <Home className="h-10 w-10 text-ink-300" />
+                    <Home className="h-10 w-10 text-paper-300" />
                   )}
                 </div>
                 <div className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold text-ink-900">
+                    <span className="text-lg font-semibold text-paper-900">
                       {formatMoney(l.baseRent, currency)}
-                      <span className="text-xs font-normal text-ink-400">/mo</span>
+                      <span className="text-xs font-normal text-paper-400">/mo</span>
                     </span>
-                    <span className="badge bg-ink-100 text-ink-600">{titleCase(l.unitType)}</span>
+                    <span className="badge bg-paper-100 text-paper-600">{titleCase(l.unitType)}</span>
                   </div>
                   <div className="mt-1 text-sm">
-                    <span className="font-medium text-ink-700">{l.unitNumber}</span>
-                    {l.property && <span className="text-ink-500"> · {l.property.name}</span>}
+                    <span className="font-medium text-paper-700">{l.unitNumber}</span>
+                    {l.property && <span className="text-paper-500"> · {l.property.name}</span>}
                   </div>
                   {l.property && (l.property.city || l.property.county) && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-ink-400">
+                    <div className="mt-1 flex items-center gap-1 text-xs text-paper-400">
                       <MapPin className="h-3 w-3" />
                       {[l.property.city, l.property.county].filter(Boolean).join(', ')}
                     </div>
                   )}
-                  <div className="mt-3 flex items-center gap-4 text-xs text-ink-500">
+                  <div className="mt-3 flex items-center gap-4 text-xs text-paper-500">
                     {l.bedrooms ? (
                       <span className="flex items-center gap-1">
                         <BedDouble className="h-3.5 w-3.5" /> {l.bedrooms}
@@ -258,14 +258,14 @@ export default function PublicPage() {
         {selected && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="text-2xl font-semibold text-ink-900">
+              <div className="text-2xl font-semibold text-paper-900">
                 {formatMoney(selected.baseRent, currency)}
-                <span className="text-sm font-normal text-ink-400">/month</span>
+                <span className="text-sm font-normal text-paper-400">/month</span>
               </div>
-              <span className="badge bg-ink-100 text-ink-600">{titleCase(selected.unitType)}</span>
+              <span className="badge bg-paper-100 text-paper-600">{titleCase(selected.unitType)}</span>
             </div>
             {selected.property && (
-              <p className="flex items-center gap-1 text-sm text-ink-500">
+              <p className="flex items-center gap-1 text-sm text-paper-500">
                 <MapPin className="h-4 w-4" />
                 {[selected.property.city, selected.property.county, selected.property.neighborhood]
                   .filter(Boolean)
@@ -289,9 +289,9 @@ export default function PublicPage() {
                 value={selected.sizeSqm ? `${selected.sizeSqm} m²` : '—'}
               />
             </div>
-            {selected.description && <p className="text-sm text-ink-600">{selected.description}</p>}
+            {selected.description && <p className="text-sm text-paper-600">{selected.description}</p>}
             {selected.depositAmount && (
-              <p className="text-sm text-ink-500">
+              <p className="text-sm text-paper-500">
                 Deposit: {formatMoney(selected.depositAmount, currency)}
               </p>
             )}
@@ -374,10 +374,10 @@ function DetailStat({
   value: string;
 }) {
   return (
-    <div className="rounded-lg bg-ink-50/60 p-3">
-      <div className="mx-auto mb-1 flex justify-center text-ink-400">{icon}</div>
-      <div className="text-sm font-semibold text-ink-800">{value}</div>
-      <div className="text-xs text-ink-400">{label}</div>
+    <div className="rounded-lg bg-paper-50/60 p-3">
+      <div className="mx-auto mb-1 flex justify-center text-paper-400">{icon}</div>
+      <div className="text-sm font-semibold text-paper-800">{value}</div>
+      <div className="text-xs text-paper-400">{label}</div>
     </div>
   );
 }

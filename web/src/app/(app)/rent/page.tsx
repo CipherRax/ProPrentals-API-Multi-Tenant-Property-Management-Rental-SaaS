@@ -125,10 +125,10 @@ export default function RentPage() {
                 header: 'Tenant',
                 render: (r) => (
                   <div>
-                    <div className="font-medium text-ink-800">
+                    <div className="font-medium text-paper-800">
                       {r.tenancy?.tenant?.fullName || '—'}
                     </div>
-                    <div className="text-xs text-ink-400">
+                    <div className="text-xs text-paper-400">
                       Unit {r.tenancy?.unit?.unitNumber || '—'}
                     </div>
                   </div>
@@ -138,7 +138,7 @@ export default function RentPage() {
                 key: 'period',
                 header: 'Period',
                 render: (r) => (
-                  <span className="text-ink-600">
+                  <span className="text-paper-600">
                     {new Date(r.periodStart).toLocaleDateString('en-KE', {
                       month: 'short',
                       year: 'numeric',
@@ -150,7 +150,7 @@ export default function RentPage() {
                 key: 'amount',
                 header: 'Amount',
                 render: (r) => (
-                  <span className="font-medium text-ink-800">
+                  <span className="font-medium text-paper-800">
                     {formatMoney(r.amount, currency)}
                   </span>
                 ),
@@ -159,7 +159,7 @@ export default function RentPage() {
                 key: 'paidAmount',
                 header: 'Paid',
                 render: (r) => (
-                  <span className="text-ink-600">{formatMoney(r.paidAmount, currency)}</span>
+                  <span className="text-paper-600">{formatMoney(r.paidAmount, currency)}</span>
                 ),
               },
               {

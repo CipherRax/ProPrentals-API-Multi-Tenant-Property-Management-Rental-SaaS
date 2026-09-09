@@ -53,8 +53,8 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="card p-10 text-center">
-        <p className="text-sm text-ink-500">
+      <div className="surface p-10 text-center">
+        <p className="text-sm text-paper-500">
           You don&apos;t have permission to view the platform admin console.
         </p>
       </div>
@@ -83,13 +83,13 @@ export default function AdminPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {statCards.map((s) => (
-          <div key={s.label} className="card flex items-center gap-4 p-5">
+          <div key={s.label} className="surface flex items-center gap-4 p-5">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
               {s.icon}
             </div>
             <div>
-              <div className="text-sm text-ink-500">{s.label}</div>
-              <div className="text-xl font-semibold text-ink-900">{s.value}</div>
+              <div className="text-sm text-paper-500">{s.label}</div>
+              <div className="text-xl font-semibold text-paper-900">{s.value}</div>
             </div>
           </div>
         ))}
@@ -97,7 +97,7 @@ export default function AdminPage() {
 
       <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
           <input
             className="input pl-9"
             placeholder="Search organizations…"
@@ -115,15 +115,15 @@ export default function AdminPage() {
             header: 'Organization',
             render: (o) => (
               <div>
-                <div className="font-medium text-ink-800">{o.name}</div>
-                <div className="text-xs text-ink-400">{o.slug}</div>
+                <div className="font-medium text-paper-800">{o.name}</div>
+                <div className="text-xs text-paper-400">{o.slug}</div>
               </div>
             ),
           },
           {
             key: 'contactEmail',
             header: 'Contact',
-            render: (o) => <span className="text-ink-600">{o.contactEmail || '—'}</span>,
+            render: (o) => <span className="text-paper-600">{o.contactEmail || '—'}</span>,
           },
           {
             key: 'verificationStatus',
@@ -133,7 +133,7 @@ export default function AdminPage() {
           {
             key: 'createdAt',
             header: 'Joined',
-            render: (o) => <span className="text-ink-600">{formatDateTime(o.createdAt)}</span>,
+            render: (o) => <span className="text-paper-600">{formatDateTime(o.createdAt)}</span>,
           },
         ]}
         rows={orgs}

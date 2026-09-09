@@ -80,25 +80,25 @@ export default function MessagesPage() {
     <div>
       <PageHeader title="Messages" description="Conversations with your tenants" />
 
-      <div className="card flex h-[calc(100vh-220px)] overflow-hidden">
-        <div className="w-72 shrink-0 overflow-y-auto border-r border-ink-100">
+      <div className="surface flex h-[calc(100vh-220px)] overflow-hidden">
+        <div className="w-72 shrink-0 overflow-y-auto border-r border-paper-100">
           {conversations.length === 0 ? (
-            <div className="px-4 py-10 text-center text-sm text-ink-400">No conversations yet.</div>
+            <div className="px-4 py-10 text-center text-sm text-paper-400">No conversations yet.</div>
           ) : (
             conversations.map((c) => (
               <button
                 key={c.id}
                 onClick={() => setActive(c)}
-                className={`flex w-full items-center gap-3 border-b border-ink-50 px-4 py-3 text-left hover:bg-ink-50/60 ${
+                className={`flex w-full items-center gap-3 border-b border-paper-50 px-4 py-3 text-left hover:bg-paper-50/60 ${
                   active?.id === c.id ? 'bg-brand-50/40' : ''
                 }`}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-100 text-sm font-semibold text-ink-600">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-paper-100 text-sm font-semibold text-paper-600">
                   {initials(c.tenant?.fullName ?? '?')}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="truncate text-sm font-medium text-ink-800">
+                    <span className="truncate text-sm font-medium text-paper-800">
                       {c.tenant?.fullName || 'Tenant'}
                     </span>
                     {c.unreadCount > 0 && (
@@ -106,7 +106,7 @@ export default function MessagesPage() {
                     )}
                   </div>
                   {c.lastMessage && (
-                    <div className="line-clamp-1 text-xs text-ink-400">{c.lastMessage}</div>
+                    <div className="line-clamp-1 text-xs text-paper-400">{c.lastMessage}</div>
                   )}
                 </div>
               </button>
@@ -116,7 +116,7 @@ export default function MessagesPage() {
 
         <div className="flex flex-1 flex-col">
           {!active ? (
-            <div className="flex flex-1 items-center justify-center text-sm text-ink-400">
+            <div className="flex flex-1 items-center justify-center text-sm text-paper-400">
               <EmptyState
                 icon={<MessageSquare className="h-8 w-8" />}
                 title="Select a conversation"
@@ -125,15 +125,15 @@ export default function MessagesPage() {
             </div>
           ) : (
             <>
-              <div className="border-b border-ink-100 px-5 py-3">
-                <div className="text-sm font-semibold text-ink-800">
+              <div className="border-b border-paper-100 px-5 py-3">
+                <div className="text-sm font-semibold text-paper-800">
                   {active.tenant?.fullName || 'Tenant'}
                 </div>
-                <div className="text-xs text-ink-400">{active.tenant?.email}</div>
+                <div className="text-xs text-paper-400">{active.tenant?.email}</div>
               </div>
               <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
                 {messages.length === 0 ? (
-                  <div className="py-10 text-center text-sm text-ink-400">
+                  <div className="py-10 text-center text-sm text-paper-400">
                     No messages yet. Say hello!
                   </div>
                 ) : (
@@ -142,14 +142,14 @@ export default function MessagesPage() {
                     return (
                       <div key={m.id} className={`flex ${mine ? 'justify-end' : ''}`}>
                         <div
-                          className={`max-w-[70%] rounded-xl px-4 py-2 text-sm ${
-                            mine ? 'bg-brand-700 text-white' : 'bg-ink-100 text-ink-800'
+                          className={`max-w-[70%] rounded-card px-4 py-2 text-sm ${
+                            mine ? 'bg-brand-700 text-white' : 'bg-paper-100 text-paper-800'
                           }`}
                         >
                           <div>{m.body}</div>
                           <div
                             className={`mt-1 text-[11px] ${
-                              mine ? 'text-brand-100' : 'text-ink-400'
+                              mine ? 'text-brand-100' : 'text-paper-400'
                             }`}
                           >
                             {formatDateTime(m.createdAt)}
@@ -161,7 +161,7 @@ export default function MessagesPage() {
                 )}
                 <div ref={bottomRef} />
               </div>
-              <div className="flex items-center gap-2 border-t border-ink-100 p-3">
+              <div className="flex items-center gap-2 border-t border-paper-100 p-3">
                 <input
                   className="input"
                   placeholder="Type a message…"
