@@ -102,7 +102,7 @@ export default function PropertiesPage() {
           pickerFiles,
         );
       }
-      success('Property created');
+      success(`"${form.name}" created.`);
       setCreateOpen(false);
       setPickerFiles([]);
       setForm({

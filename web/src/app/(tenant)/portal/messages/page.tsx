@@ -74,7 +74,7 @@ export default function TenantMessagesPage() {
     mutationFn: (organizationId: string) =>
       api.post<MyConversation>('/tenants/me/conversations', { organizationId }),
     onSuccess: (conversation) => {
-      success('Conversation started.');
+      success('Conversation started — go ahead and send a message.');
       queryClient.invalidateQueries({ queryKey: tenantQueryKeys.conversations });
       setActiveId(conversation.id);
     },
@@ -92,7 +92,7 @@ export default function TenantMessagesPage() {
     <div>
       <PageHeader
         title="Messages"
-        description="Chat with your landlord or property managers"
+        description="Chat with your landlord or property manager"
         actions={
           primaryOrgId ? (
             <button
@@ -111,7 +111,7 @@ export default function TenantMessagesPage() {
         <EmptyState
           icon={<MessageSquare className="h-10 w-10" />}
           title="No tenancy yet"
-          description="Messaging will be available once your tenancy is active."
+          description="Messaging will be available once your tenancy is set up."
         />
       ) : conversationsQ.isLoading ? (
         <Skeleton className="h-96 w-full" />
@@ -123,7 +123,7 @@ export default function TenantMessagesPage() {
             </div>
             {!conversations.length ? (
               <div className="px-4 py-10 text-center text-sm text-paper-400">
-                No conversations yet.
+                No conversations yet — start one below.
                 <button
                   className="mx-auto mt-3 block btn-primary"
                   disabled={startMutation.isPending}
@@ -165,7 +165,7 @@ export default function TenantMessagesPage() {
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-xs text-paper-500">
-                        {c.messages[0]?.body ?? 'No messages yet'}
+                        {c.messages[0]?.body ?? 'No messages yet — say hello!'}
                       </p>
                     </div>
                   </button>

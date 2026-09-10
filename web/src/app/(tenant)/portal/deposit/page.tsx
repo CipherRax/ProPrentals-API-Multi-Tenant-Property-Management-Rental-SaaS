@@ -36,7 +36,7 @@ export default function TenantDepositPage() {
         <EmptyState
           icon={<PiggyBank className="h-10 w-10" />}
           title="No active tenancy"
-          description="Deposit details will appear here once a tenancy is active."
+          description="Your deposit details will appear here once your tenancy is active."
         />
       </div>
     );
@@ -60,7 +60,7 @@ export default function TenantDepositPage() {
         <EmptyState
           icon={<PiggyBank className="h-10 w-10" />}
           title="No deposit record"
-          description="No security deposit has been recorded for this tenancy."
+          description="No security deposit has been recorded for your tenancy yet."
         />
       </div>
     );
@@ -105,7 +105,7 @@ export default function TenantDepositPage() {
       <div className="surface overflow-hidden">
         {!transactions.length ? (
           <div className="px-6 py-10 text-center text-sm text-paper-400">
-            No deposit transactions recorded yet.
+            No deposit transactions yet — payments and refunds will appear here.
           </div>
         ) : (
           <div className="divide-y divide-paper-100">

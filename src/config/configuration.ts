@@ -35,7 +35,7 @@ export default () => ({
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     user: process.env.SMTP_USER,
     password: process.env.SMTP_PASSWORD,
-    from: process.env.SMTP_FROM || 'ProPrentals <no-reply@proprentals.app>',
+    from: process.env.SMTP_FROM || 'Habita <no-reply@habita.app>',
   },
 
   sms: {

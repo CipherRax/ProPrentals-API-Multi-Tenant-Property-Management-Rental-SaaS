@@ -35,7 +35,7 @@ function layout(bodyHtml: string, note?: string): string {
           <td style="background-color:${BRAND_DARK};padding:22px 32px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font-size:18px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">ProPrentals</td>
+                <td style="font-size:18px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">Habita</td>
               </tr>
             </table>
           </td>
@@ -57,14 +57,14 @@ function layout(bodyHtml: string, note?: string): string {
         </tr>` : ''}
         <tr>
           <td style="padding:18px 32px 24px;border-top:1px solid #ecece6;font-size:11.5px;line-height:18px;color:#8a8a80;">
-            You are receiving this email because you were invited to use
-            ProPrentals, a property management platform. If this wasn't expected,
-            you can safely ignore this message.
+            You're receiving this because you have an account with Habita,
+            a property management platform. If this wasn't expected,
+            just ignore this message.
           </td>
         </tr>
       </table>
       <p style="text-align:center;font-size:11px;color:#a5a59b;margin:16px 0 0;">
-        © ${new Date().getFullYear()} ProPrentals · Secure property &amp; rental management
+        © ${new Date().getFullYear()} Habita · Secure property &amp; rental management
       </p>
     </div>
   </body>
@@ -100,17 +100,17 @@ export function tenantInvitation(p: TenantInvitationTemplate): EmailSendPayload 
     </p>
     <p style="margin:0 0 6px;font-size:14px;line-height:22px;color:#4d4c45;">
       <strong>${p.organizationName}</strong> has set up a tenant account for you on
-      ProPrentals. Click the button below to open your account and start using it.
+      Habita. Click the button below to open your account and start using it.
     </p>
     ${ctaButton(p.actionLabel, p.actionUrl)}
   `;
   return {
     text: [
-      `You're invited to join ${p.organizationName} on ProPrentals`,
+      `You're invited to join ${p.organizationName} on Habita`,
       '',
       `Hi ${p.recipientName},`,
       '',
-      `${p.organizationName} has set up a tenant account for you on ProPrentals.`,
+      `${p.organizationName} has set up a tenant account for you on Habita.`,
       'Open the link below to access your account:',
       '',
       p.actionUrl,
@@ -133,7 +133,7 @@ export function staffInvitation(p: StaffInvitationTemplate): EmailSendPayload {
       Hi ${p.recipientName},
     </p>
     <p style="margin:0 0 6px;font-size:14px;line-height:22px;color:#4d4c45;">
-      <strong>${p.organizationName}</strong> has added you to their ProPrentals
+      <strong>${p.organizationName}</strong> has added you to their Habita
       workspace as <strong>${p.roleLabel}</strong>. Accept the invitation below to
       set up your staff account.
     </p>
@@ -141,11 +141,11 @@ export function staffInvitation(p: StaffInvitationTemplate): EmailSendPayload {
   `;
   return {
     text: [
-      `You're invited to join ${p.organizationName} on ProPrentals`,
+      `You're invited to join ${p.organizationName} on Habita`,
       '',
       `Hi ${p.recipientName},`,
       '',
-      `${p.organizationName} has added you to their ProPrentals workspace as ${p.roleLabel}.`,
+      `${p.organizationName} has added you to their Habita workspace as ${p.roleLabel}.`,
       'Use the link below to accept the invitation and set up your staff account:',
       '',
       p.actionUrl,
@@ -165,18 +165,18 @@ export function passwordReset(p: PasswordResetTemplate): EmailSendPayload {
       Hi ${p.recipientName},
     </p>
     <p style="margin:0 0 6px;font-size:14px;line-height:22px;color:#4d4c45;">
-      We received a request to reset your ProPrentals password. Use the link below
+      We received a request to reset your Habita password. Use the link below
       to choose a new one.
     </p>
     ${ctaButton(p.actionLabel, p.actionUrl)}
   `;
   return {
     text: [
-      'Reset your ProPrentals password',
+      'Reset your Habita password',
       '',
       `Hi ${p.recipientName},`,
       '',
-      'We received a request to reset your ProPrentals password.',
+      'We received a request to reset your Habita password.',
       'Use the link below to choose a new one:',
       '',
       p.actionUrl,

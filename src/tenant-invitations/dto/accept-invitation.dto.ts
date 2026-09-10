@@ -4,7 +4,7 @@ import { IsOptional, IsString, Matches, MinLength } from 'class-validator';
 export class AcceptInvitationDto {
   @ApiPropertyOptional({
     description:
-      'Required only if no account exists yet for the invited email. Omit if you already have a ProPrentals account with this email — log in instead and the invitation is linked automatically the next time this endpoint is called while authenticated in a future revision.',
+      'Required only if no account exists yet for the invited email. Omit if you already have a Habita account with this email — log in instead and the invitation is linked automatically the next time this endpoint is called while authenticated in a future revision.',
   })
   @IsOptional()
   @IsString()

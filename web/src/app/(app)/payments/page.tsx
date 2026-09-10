@@ -77,7 +77,7 @@ export default function PaymentsPage() {
         manualReference: form.manualReference || undefined,
         notes: form.notes || undefined,
       });
-      success('Payment recorded');
+      success(`Payment of ${formatMoney(Number(form.amount), currency)} recorded.`);
       setPayOpen(false);
       setForm({ tenancyId: '', amount: '', method: 'CASH', manualReference: '', notes: '' });
       load(1);
@@ -108,7 +108,7 @@ export default function PaymentsPage() {
         <EmptyState
           icon={<CreditCard className="h-8 w-8" />}
           title="No payments yet"
-          description="Record a payment against an active tenancy."
+          description="Record a payment against an active tenancy to keep your financials up to date."
           action={
             <button className="btn-primary" onClick={() => setPayOpen(true)}>
               <Plus className="h-4 w-4" /> Record payment

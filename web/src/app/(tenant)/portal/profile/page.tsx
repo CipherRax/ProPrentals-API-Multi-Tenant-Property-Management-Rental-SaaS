@@ -20,14 +20,14 @@ export default function TenantProfilePage() {
     <div>
       <PageHeader
         title="My profile"
-        description="Your details as held by your landlord. Some fields can be updated by you."
+        description="Your details as held by your landlord. You can update your phone, address, and emergency contact below."
       />
 
       {loading ? (
         <Skeleton className="h-40 w-full" />
       ) : !profiles.length ? (
         <div className="surface p-8 text-center text-sm text-paper-500">
-          No tenant profile is linked to your account yet.
+          No tenant profile is linked to your account yet — contact your landlord to get set up.
         </div>
       ) : (
         <div className="space-y-6">
@@ -61,7 +61,7 @@ function ProfileCard({ profile }: { profile: MyTenantProfile }) {
     setUploading(true);
     try {
       await api.upload(`/tenants/me/profiles/${profile.id}/avatar`, [file]);
-      success('Profile photo updated.');
+      success('Profile photo updated — looking good!');
       queryClient.invalidateQueries({ queryKey: tenantQueryKeys.profiles });
     } catch (e) {
       error(getErrorMessage(e));
@@ -79,7 +79,7 @@ function ProfileCard({ profile }: { profile: MyTenantProfile }) {
         addressLine: form.addressLine || undefined,
       }),
     onSuccess: () => {
-      success('Profile updated.');
+      success('Profile updated — your details are saved.');
       queryClient.invalidateQueries({ queryKey: tenantQueryKeys.profiles });
     },
     onError: (err) => error(getErrorMessage(err)),

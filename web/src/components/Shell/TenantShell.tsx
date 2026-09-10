@@ -39,6 +39,23 @@ export function TenantShell({ children }: { children: ReactNode }) {
   const isLandlordToo = organizations.length > 0;
 
   useEffect(() => {
+    const titles: Record<string, string> = {
+      '/portal': 'Tenant Home',
+      '/portal/rent': 'Your Rent',
+      '/portal/ledger': 'Ledger',
+      '/portal/payments': 'Payments',
+      '/portal/receipts': 'Receipts',
+      '/portal/deposit': 'Deposit',
+      '/portal/maintenance': 'Maintenance',
+      '/portal/announcements': 'Announcements',
+      '/portal/messages': 'Messages',
+      '/portal/profile': 'Profile',
+    };
+    const title = titles[pathname];
+    if (title) document.title = `${title} — Habita`;
+  }, [pathname]);
+
+  useEffect(() => {
     if (loading) return;
     if (!user) {
       router.replace('/login');
@@ -60,7 +77,7 @@ export function TenantShell({ children }: { children: ReactNode }) {
         </div>
         <div className="min-w-0">
           <div className="text-[15px] font-semibold leading-tight tracking-tight text-paper-900">
-            ProPrentals
+            Habita
           </div>
           <div className="text-[11px] text-paper-400">Tenant portal</div>
         </div>
@@ -166,9 +183,9 @@ export function TenantShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <a href="/public" className="btn-secondary hidden py-1.5 sm:inline-flex">
+            <Link href="/" className="btn-secondary hidden py-1.5 sm:inline-flex">
               Marketplace
-            </a>
+            </Link>
             {isLandlordToo && (
               <Link href="/dashboard" className="btn-secondary hidden py-1.5 md:inline-flex">
                 Owner dashboard

@@ -103,6 +103,15 @@
   .skeleton {
     @apply animate-pulse rounded bg-paper-200;
   }
+
+  /* Marketplace — soft green gradient + whisper-fine dot pattern */
+  .marketplace-bg {
+    background-color: #f7f9f8;
+    background-image:
+      radial-gradient(circle at 14px 14px, rgba(0, 165, 80, 0.05) 1.5px, transparent 2px),
+      linear-gradient(135deg, rgba(0, 165, 80, 0.05), rgba(255, 255, 255, 0) 55%);
+    background-size: 32px 32px, 100% 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -65,7 +65,7 @@ export default function SubscriptionPage() {
       await api.post(`/organizations/${activeOrg.id}/subscription/change-plan`, {
         tier: changeTo.tier,
       });
-      success('Plan updated');
+      success(`Switched to the ${changeTo.name} plan.`);
       setChangeTo(null);
       load();
     } catch (e) {

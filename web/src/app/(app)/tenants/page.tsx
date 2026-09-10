@@ -103,7 +103,7 @@ export default function TenantsPage() {
         billingFrequency: form.billingFrequency,
         paymentDueDay: form.paymentDueDay ? Number(form.paymentDueDay) : undefined,
       });
-      success('Invitation sent to tenant');
+      success(`Invitation sent to ${form.tenantFullName}.`);
       setInviteOpen(false);
       setForm({
         propertyId: '',

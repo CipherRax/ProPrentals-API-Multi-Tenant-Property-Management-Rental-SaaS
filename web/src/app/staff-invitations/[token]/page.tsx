@@ -7,6 +7,7 @@ import { Users, ShieldCheck, ChevronRight, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 interface InvitePreview {
@@ -93,13 +94,14 @@ function StaffInvitationFlow() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper-100 px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-paper-50 px-6 py-12">
+      <PageTitle title="You're invited" />
       <div className="w-full max-w-md">
         <div className="mb-8 flex items-center justify-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-700 text-white">
             <Users className="h-5 w-5" />
           </div>
-          <span className="text-lg font-semibold tracking-tight text-paper-900">ProPrentals</span>
+          <span className="text-lg font-semibold tracking-tight text-paper-900">Habita</span>
         </div>
 
         {loading ? (

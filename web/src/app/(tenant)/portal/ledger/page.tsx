@@ -27,7 +27,7 @@ export default function TenantLedgerPage() {
   if (tenancyLoading) {
     return (
       <div>
-        <PageHeader title="Ledger" description="A running record of charges and payments" />
+        <PageHeader title="Ledger" description="A running record of all your charges and payments" />
         <Skeleton className="h-40 w-full" />
       </div>
     );
@@ -36,11 +36,11 @@ export default function TenantLedgerPage() {
   if (!tenancy) {
     return (
       <div>
-        <PageHeader title="Ledger" description="A running record of charges and payments" />
+        <PageHeader title="Ledger" description="A running record of all your charges and payments" />
         <EmptyState
           icon={<ScrollText className="h-10 w-10" />}
           title="No active tenancy"
-          description="Your ledger statement will appear here once a tenancy is active."
+          description="Your ledger will come to life once your tenancy is active."
         />
       </div>
     );
@@ -61,7 +61,7 @@ export default function TenantLedgerPage() {
     <div>
       <PageHeader
         title="Ledger"
-        description="A running record of charges and payments"
+        description="A running record of all your charges and payments"
         actions={
           <button className="btn-secondary" onClick={download} disabled={statementQ.isLoading}>
             <Download className="h-4 w-4" />
@@ -93,7 +93,7 @@ export default function TenantLedgerPage() {
             ))}
           </div>
         ) : !entries.length ? (
-          <div className="px-6 py-10 text-center text-sm text-paper-400">No ledger entries yet.</div>
+          <div className="px-6 py-10 text-center text-sm text-paper-400">No ledger entries yet — charges and payments will appear here as they&apos;re recorded.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">

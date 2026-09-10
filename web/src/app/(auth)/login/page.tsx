@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Home, Lock, Mail, Eye, EyeOff, AlertCircle, ShieldCheck, Zap, MessageSquare } from 'lucide-react';
 import { useAuth, getErrorMessage } from '@/lib/auth';
 import { Spinner } from '@/components/ui/Spinner';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { useToast } from '@/lib/toast';
 
 export default function LoginPage() {
@@ -27,7 +28,7 @@ export default function LoginPage() {
       success(`Welcome back, ${user?.firstName ?? email.split('@')[0] ?? 'there'}`);
       router.replace(home);
     } catch (err) {
-      const message = getErrorMessage(err);
+      const message = friendlyLoginError(err);
       setInlineError(message);
       toastError(message);
     } finally {
@@ -37,6 +38,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
+      <PageTitle title="Sign In" />
       <div className="flex flex-1 items-center justify-center bg-paper-50 px-6">
         <div className="w-full max-w-md rounded-card border border-paper-200 bg-white p-8 shadow-card sm:p-10">
           <div className="mb-8 flex items-center gap-2.5">
@@ -44,14 +46,14 @@ export default function LoginPage() {
               <Home className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-lg font-semibold tracking-tight text-paper-900">ProPrentals</div>
-              <div className="text-xs text-paper-400">Property Management Platform</div>
+              <div className="text-lg font-semibold tracking-tight text-paper-900">Habita</div>
+              <div className="text-xs text-paper-400">A happier way to manage your rentals</div>
             </div>
           </div>
 
-          <h1 className="text-xl font-semibold tracking-tight text-paper-900">Welcome back</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-paper-900">Welcome back!</h1>
           <p className="mt-1 text-sm text-paper-500">
-            Sign in to manage your properties and tenants.
+            Good to see you again — your properties are right where you left them.
           </p>
 
           {inlineError && (
@@ -128,19 +130,11 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-paper-500">
-            New to ProPrentals?{' '}
+            New to Habita?{' '}
             <Link href="/register" className="font-semibold text-brand-600 hover:text-brand-700">
               Create an account
             </Link>
           </p>
-
-          <div className="mt-8 rounded-panel border border-paper-200 bg-paper-50 p-3 text-center">
-            <p className="text-xs text-paper-500">
-              Demo access ·{' '}
-              <span className="font-medium text-paper-700">owner@demo-landlord.app</span> /{' '}
-              <span className="font-medium text-paper-700">DemoOwner@123</span>
-            </p>
-          </div>
         </div>
       </div>
 
@@ -152,15 +146,15 @@ export default function LoginPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 text-white">
             <Home className="h-4 w-4" />
           </div>
-          <span className="text-sm font-semibold">ProPrentals</span>
+          <span className="text-sm font-semibold">Habita</span>
         </div>
 
         <div className="relative">
           <p className="text-xs font-medium uppercase tracking-widest text-brand-100">
-            Rental management, made simple
+            Rentals that run themselves
           </p>
           <blockquote className="mt-4 text-2xl font-light leading-snug">
-            “Running a portfolio shouldn&apos;t mean juggling twenty spreadsheets. ProPrentals puts
+            “Running a portfolio shouldn&apos;t mean juggling twenty spreadsheets. Habita puts
             the entire rental lifecycle in one calm, clear place.”
           </blockquote>
           <div className="mt-5 text-sm text-brand-100">
@@ -199,4 +193,18 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+function friendlyLoginError(err: unknown): string {
+  const message = getErrorMessage(err);
+  if (message.toLowerCase().includes('invalid email or password')) {
+    return 'Hmm, that email or password didn\u2019t quite match. Double-check them and try again, or reset your password below.';
+  }
+  if (message.toLowerCase().includes('account is not active')) {
+    return 'This account hasn\u2019t been activated yet. Check your inbox for the activation link, or get in touch and we\u2019ll help.';
+  }
+  if (message.toLowerCase().includes('too many requests') || message.toLowerCase().includes('throttl')) {
+    return 'We\u2019re seeing too many attempts from here — give it a moment and try again.';
+  }
+  return message;
 }

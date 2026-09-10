@@ -76,7 +76,7 @@ export default function TenantRentPage() {
   if (chargesQ.isLoading) {
     return (
       <div>
-        <PageHeader title="My rent" description="Rent charges and payments against your account" />
+        <PageHeader title="My rent" description="View your rent charges and make payments" />
         <StatGridSkeleton count={3} />
         <div className="mt-6">
           <TableSkeleton rows={5} cols={4} />
@@ -89,7 +89,7 @@ export default function TenantRentPage() {
     <div>
       <PageHeader
         title="My rent"
-        description="Rent charges and payments against your account"
+        description="View your rent charges and make payments"
         actions={
           <button
             className="btn-primary"
@@ -123,7 +123,7 @@ export default function TenantRentPage() {
       <h2 className="mb-3 mt-8 text-sm font-semibold text-paper-800">Rent charges</h2>
       <div className="surface overflow-hidden">
         {!charges.length ? (
-          <div className="px-6 py-10 text-center text-sm text-paper-400">No rent charges yet.</div>
+          <div className="px-6 py-10 text-center text-sm text-paper-400">No rent charges yet — your first charge will show up here once it&apos;s generated.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
@@ -207,7 +207,7 @@ export default function TenantRentPage() {
           <EmptyState
             icon={<CreditCard className="h-10 w-10" />}
             title="No active tenancy"
-            description="A tenancy needs to be active before you can see or pay rent."
+            description="You'll be able to see and pay rent once your tenancy is active."
           />
         </div>
       )}
@@ -253,7 +253,7 @@ function PayModal({
     >
       <div className="space-y-4">
         <p className="text-sm text-paper-500">
-          An M-Pesa prompt will be sent to your phone to confirm the payment.
+          An M-Pesa prompt will be sent to your phone. Check for the STK push and enter your PIN to confirm.
         </p>
 
         {charge && (

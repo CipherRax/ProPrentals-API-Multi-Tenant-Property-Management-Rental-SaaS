@@ -126,7 +126,7 @@ export default function PropertyDetailPage() {
         baseRent: Number(unitForm.baseRent),
         depositAmount: unitForm.depositAmount ? Number(unitForm.depositAmount) : undefined,
       });
-      success('Unit created');
+      success(`Unit ${unitForm.unitNumber} added to ${property?.name ?? 'this property'}.`);
       setUnitOpen(false);
       setUnitForm({
         buildingId: '',
@@ -156,7 +156,7 @@ export default function PropertyDetailPage() {
         ...buildingForm,
         floors: buildingForm.floors ? Number(buildingForm.floors) : undefined,
       });
-      success('Building created');
+      success(`Building "${buildingForm.name}" added.`);
       setBuildingOpen(false);
       setBuildingForm({ name: '', buildingNumber: '', floors: '' });
       load();
@@ -333,10 +333,10 @@ export default function PropertyDetailPage() {
                       : 'List property in marketplace'}
                 </button>
                 <button className="btn-secondary" onClick={() => setBuildingOpen(true)}>
-                  <Building2 className="h-4 w-4" /> Building
+                  <Building2 className="h-4 w-4" /> Add building
                 </button>
                 <button className="btn-primary" onClick={() => setUnitOpen(true)}>
-                  <Plus className="h-4 w-4" /> Unit
+                  <Plus className="h-4 w-4" /> Add unit
                 </button>
               </>
             )}
@@ -479,8 +479,8 @@ export default function PropertyDetailPage() {
             </div>
             <p className="mt-3 text-sm font-medium text-paper-600">No photos yet</p>
             <p className="mt-1 max-w-md text-xs text-paper-400">
-              Pick a unit above, then add photos so that unit stands out with its own pictures in
-              the marketplace.
+              Pick a unit above and add photos, so it stands out in the marketplace with its
+              own pictures.
             </p>
           </div>
         )}
@@ -491,7 +491,7 @@ export default function PropertyDetailPage() {
           <h2 className="mb-3 text-sm font-semibold text-paper-800">Buildings</h2>
           {buildings.length === 0 ? (
             <div className="surface px-5 py-8 text-center text-sm text-paper-400">
-              No buildings added yet.
+              No buildings added yet. Add a building to organise units by block or tower.
             </div>
           ) : (
             <div className="space-y-3">
@@ -518,7 +518,7 @@ export default function PropertyDetailPage() {
           <h2 className="mb-3 text-sm font-semibold text-paper-800">Units</h2>
           {units.length === 0 ? (
             <div className="surface px-5 py-8 text-center text-sm text-paper-400">
-              No units yet. Add your first unit.
+              No units yet. Add your first unit to start tracking rent and tenancies.
             </div>
           ) : (
             <div className="space-y-3">

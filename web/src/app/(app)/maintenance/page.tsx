@@ -53,7 +53,7 @@ export default function MaintenancePage() {
         <EmptyState
           icon={<Wrench className="h-8 w-8" />}
           title="No maintenance requests"
-          description="Requests submitted by tenants will appear here."
+          description="When tenants submit repair or maintenance requests, they'll show up here for you to track and resolve."
         />
       ) : (
         <>

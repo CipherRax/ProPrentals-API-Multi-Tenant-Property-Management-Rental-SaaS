@@ -7,6 +7,7 @@ import { Home, Building2, DoorOpen, ChevronRight, Loader2, ShieldCheck } from 'l
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 interface InvitePreview {
@@ -92,13 +93,14 @@ function InviteFlow() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper-100 px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-paper-50 px-6 py-12">
+      <PageTitle title="You're invited" />
       <div className="w-full max-w-md">
         <div className="mb-8 flex items-center justify-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-700 text-white">
             <Home className="h-5 w-5" />
           </div>
-          <span className="text-lg font-semibold tracking-tight text-paper-900">ProPrentals</span>
+          <span className="text-lg font-semibold tracking-tight text-paper-900">Habita</span>
         </div>
 
         {loading ? (
@@ -178,7 +180,7 @@ function InviteFlow() {
                 <p className="flex items-start gap-2 text-sm text-paper-600">
                   <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" />
                   Set a password to create and activate your account. If you already have a
-                  ProPrentals account, leave this blank and sign in instead to link it.
+                  Habita account, leave this blank and sign in instead to link it.
                 </p>
               </div>
 

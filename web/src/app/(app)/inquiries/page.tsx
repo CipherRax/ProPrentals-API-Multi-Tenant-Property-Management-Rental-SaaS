@@ -66,7 +66,7 @@ export default function InquiriesPage() {
       await api.patch(`/inquiries/organizations/${activeOrg.id}/${selected.id}/status`, {
         status,
       });
-      success('Inquiry updated');
+      success(`Inquiry from ${selected.name} marked as ${status.charAt(0) + status.slice(1).toLowerCase()}.`);
       setSelected(null);
       load(1);
     } catch (e) {

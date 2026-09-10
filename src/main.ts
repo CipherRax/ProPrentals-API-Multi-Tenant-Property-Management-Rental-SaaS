@@ -47,7 +47,7 @@ async function bootstrap() {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('ProPrentals API')
+    .setTitle('Habita API')
     .setDescription(
       'Multi-tenant property management & rental SaaS platform — REST API for landlord, tenant, and platform-admin clients.',
     )
@@ -64,7 +64,7 @@ async function bootstrap() {
   const port = config.get<number>('port') || 3000;
   await app.listen(port);
   // eslint-disable-next-line no-console
-  console.log(`ProPrentals API running on port ${port} — docs at /docs`);
+  console.log(`Habita API running on port ${port} — docs at /docs`);
 }
 
 bootstrap();

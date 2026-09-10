@@ -9,11 +9,11 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 
 export const metadata: Metadata = {
   title: {
-    default: 'ProPrentals',
-    template: '%s · ProPrentals',
+    default: 'Habita',
+    template: '%s — Habita',
   },
   description:
-    'Property management and rental platform built for Kenyan landlords, property managers, and tenants.',
+    'Habita is a happier way to manage your rentals — rent collection, receipts, maintenance, and tenant messaging in one calm, clear place.',
 };
 
 export const viewport: Viewport = {

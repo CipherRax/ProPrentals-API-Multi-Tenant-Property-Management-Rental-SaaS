@@ -102,7 +102,7 @@ export default function StaffPage() {
           role: form.role,
         },
       );
-      success('Invitation sent');
+      success(`Invitation sent to ${form.email}.`);
       setInviteOpen(false);
       setRecentLink(res.invitationLink);
       setForm({ email: '', fullName: '', role: 'CARETAKER' });
@@ -120,7 +120,7 @@ export default function StaffPage() {
       await api.delete(
         `/organizations/${activeOrg.id}/staff/invitations/${invitationId}`,
       );
-      success('Invitation revoked');
+      success(`Invitation to ${invitations.find((i) => i.id === invitationId)?.email ?? 'user'} revoked.`);
       load();
     } catch (e) {
       error(getErrorMessage(e));
@@ -131,7 +131,7 @@ export default function StaffPage() {
     if (!activeOrg) return;
     try {
       await api.patch(`/organizations/${activeOrg.id}/staff/${memberId}/role`, { role: newRole });
-      success('Role updated');
+      success(`Role changed to ${newRole.replace(/_/g, ' ').toLowerCase()}.`);
       load();
     } catch (e) {
       error(getErrorMessage(e));
@@ -142,7 +142,7 @@ export default function StaffPage() {
     if (!activeOrg) return;
     try {
       await api.delete(`/organizations/${activeOrg.id}/staff/${memberId}`);
-      success('Member removed');
+      success(`${members.find((m) => m.id === memberId)?.user.firstName ?? 'Member'} removed from the team.`);
       load();
     } catch (e) {
       error(getErrorMessage(e));
@@ -182,8 +182,7 @@ export default function StaffPage() {
           <div className="flex items-center gap-2 text-sm text-brand-800">
             <Mail className="h-4 w-4" />
             <span>
-              Invitation link (use this if the email didn&apos;t arrive, e.g. local dev without
-              SMTP):
+              Invitation link (share this if the email didn&apos;t arrive):
             </span>
           </div>
           <div className="flex items-center gap-2">

@@ -260,7 +260,7 @@ export default function MessagesPage() {
         kind === 'tenant' ? { tenantProfileId: payload.tenantProfileId } : { peerUserId: payload.peerUserId },
       );
       setNewOpen(false);
-      success('Conversation started.');
+      success('Conversation started');
       const list = await loadThreads();
       const found = list.find((t) => t.key === `${kind}:${started.id}`) ?? null;
       setActiveThread(found);
@@ -454,7 +454,7 @@ export default function MessagesPage() {
             <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
               {filteredTenants.length === 0 ? (
                 <p className="py-6 text-center text-sm text-paper-400">
-                  No activated tenants to message.
+                  No tenants with an active account yet. Invite them, and they&apos;ll be able to message you once they join.
                 </p>
               ) : (
                 filteredTenants.map((t) => (

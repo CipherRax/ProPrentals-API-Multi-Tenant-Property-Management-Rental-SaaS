@@ -20,7 +20,7 @@ export default function TenantPaymentsPage() {
 
   return (
     <div>
-      <PageHeader title="Payments" description="Payment attempts and transactions on your account" />
+      <PageHeader title="Payments" description="A history of all your payment attempts and transactions" />
 
       {paymentsQ.isLoading ? (
         <TableSkeleton rows={6} cols={4} />
@@ -28,7 +28,7 @@ export default function TenantPaymentsPage() {
         <EmptyState
           icon={<CreditCard className="h-10 w-10" />}
           title="No payments yet"
-          description="When you make a payment it will show up here."
+          description="Once you make your first payment, it will show up here."
         />
       ) : (
         <div className="surface overflow-hidden">

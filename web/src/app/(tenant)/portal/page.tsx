@@ -25,7 +25,7 @@ export default function TenantHomePage() {
   if (dashboardQ.isLoading) {
     return (
       <div>
-        <PageHeader title={`Good day, ${user?.firstName ?? 'there'}`} description="Your tenancy at a glance" />
+        <PageHeader title={`Good day, ${user?.firstName ?? 'there'}`} description="Here's what's happening with your tenancy" />
         <StatGridSkeleton count={4} />
       </div>
     );
@@ -44,11 +44,11 @@ export default function TenantHomePage() {
   if (!dash || !dash.hasActiveTenancy || !dash.tenancy) {
     return (
       <div>
-        <PageHeader title={`Good day, ${user?.firstName ?? 'there'}`} description="Your tenancy at a glance" />
+        <PageHeader title={`Good day, ${user?.firstName ?? 'there'}`} description="Here's what's happening with your tenancy" />
         <EmptyState
           icon={<DoorOpen className="h-10 w-10" />}
           title="No active tenancy"
-          description={dash?.message ?? 'There is no active tenancy linked to your account yet.'}
+          description={dash?.message ?? "You don't have an active tenancy just yet. Once your tenancy is set up, everything will appear here."}
           action={
             <Link href="/portal/profile" className="btn-secondary">
               Review my profile
@@ -111,7 +111,7 @@ export default function TenantHomePage() {
           </div>
           <div className="surface overflow-hidden">
             {!charges.length ? (
-              <div className="px-6 py-10 text-center text-sm text-paper-400">No rent charges yet.</div>
+              <div className="px-6 py-10 text-center text-sm text-paper-400">You&apos;ll see your monthly rent charges here once they&apos;re generated.</div>
             ) : (
               <table className="w-full border-collapse">
                 <tbody>
@@ -227,7 +227,7 @@ export default function TenantHomePage() {
           <h2 className="mb-3 text-sm font-semibold text-paper-800">Notifications</h2>
           <div className="space-y-3">
             {!notifications.length ? (
-              <div className="surface px-5 py-8 text-center text-sm text-paper-400">No notifications yet.</div>
+              <div className="surface px-5 py-8 text-center text-sm text-paper-400">No notifications yet — we&apos;ll let you know when there&apos;s something for you.</div>
             ) : (
               notifications.slice(0, 5).map((n) => (
                 <div key={n.id} className="surface px-5 py-4">
@@ -258,7 +258,7 @@ export default function TenantHomePage() {
             <p className="mt-3 text-xs text-paper-400">
               {due
                 ? `Next charge of ${formatMoney(toNumber(due.amount))} is due ${formatDate(due.dueDate)}.`
-                : 'No outstanding charges right now.'}
+                : 'All caught up — no outstanding charges right now.'}
             </p>
             <Link href="/portal/rent" className="mt-4 btn-primary w-full">
               Make a payment

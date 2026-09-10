@@ -86,7 +86,7 @@ export default function TenantMaintenancePage() {
         <EmptyState
           icon={<Wrench className="h-10 w-10" />}
           title="No maintenance requests"
-          description={status ? 'No requests match this status.' : 'Report a problem in your unit and it will appear here.'}
+          description={status ? 'No requests match this filter.' : 'Report a problem in your unit and it will show up here.'}
           action={
             !status && primary.tenancy ? (
               <button className="btn-primary" onClick={() => setCreateOpen(true)}>
@@ -158,7 +158,7 @@ export default function TenantMaintenancePage() {
         onSubmit={async (payload) => {
           try {
             await api.post('/tenants/me/maintenance', payload);
-            success('Maintenance request submitted.');
+            success('Maintenance request sent — we\'ll get back to you soon.');
             setCreateOpen(false);
             queryClient.invalidateQueries({ queryKey: tenantQueryKeys.maintenance });
             queryClient.invalidateQueries({ queryKey: tenantQueryKeys.dashboard });
@@ -261,7 +261,7 @@ function CreateRequestModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="New maintenance request"
+      title="Report a problem"
       size="md"
       footer={
         <>
@@ -274,13 +274,13 @@ function CreateRequestModal({
             onClick={submit}
           >
             {submitting ? <Spinner className="h-4 w-4" /> : null}
-            {submitting ? 'Submitting…' : 'Submit request'}
+            {submitting ? 'Sending…' : 'Request repair'}
           </button>
         </>
       }
     >
       {!tenancy ? (
-        <p className="text-sm text-paper-500">An active tenancy is required to raise a request.</p>
+        <p className="text-sm text-paper-500">You need an active tenancy to report a maintenance issue.</p>
       ) : (
         <div className="space-y-4">
           <p className="rounded-panel border border-paper-100 bg-paper-50/60 px-4 py-3 text-sm text-paper-600">

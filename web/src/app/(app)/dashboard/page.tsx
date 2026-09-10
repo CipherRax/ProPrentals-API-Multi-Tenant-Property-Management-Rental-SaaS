@@ -90,7 +90,7 @@ export default function DashboardPage() {
   if (!activeOrg) {
     return (
       <div className="surface p-8 text-center text-sm text-paper-500">
-        No organization available. Create one to get started.
+        You don&apos;t have an organization yet. Create one to get started.
       </div>
     );
   }
@@ -127,7 +127,7 @@ export default function DashboardPage() {
             label="Occupancy"
             value={occupancy ? `${occupancy.occupancyRate}%` : '—'}
             icon={<Percent className="h-5 w-5" />}
-            hint={occupancy ? `${occupancy.occupiedUnits} of ${occupancy.totalUnits} units occupied` : 'Occupancy reports need the Reports plan'}
+            hint={occupancy ? `${occupancy.occupiedUnits} of ${occupancy.totalUnits} units occupied` : 'Upgrade to the Reports plan to see occupancy data'}
           />
           <Stat
             label="Properties"
@@ -140,7 +140,7 @@ export default function DashboardPage() {
       {canFinancials && breakdownData.length > 0 && (
         <section className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="surface p-5 lg:col-span-1">
-            <h3 className="text-sm font-semibold text-paper-800">Collected by method</h3>
+            <h3 className="text-sm font-semibold text-paper-800">Collected by payment method</h3>
             <p className="mt-0.5 text-xs text-paper-400">Successful payments</p>
             <div className="mt-4 h-52">
               <ResponsiveContainer width="100%" height="100%">
@@ -182,7 +182,7 @@ export default function DashboardPage() {
             <div className="surface overflow-hidden">
               {!recentPayments.length ? (
                 <div className="px-6 py-10 text-center text-sm text-paper-400">
-                  No payments recorded yet.
+                  No payments recorded yet. Payments will show up here once tenants start paying.
                 </div>
               ) : (
                 <table className="w-full border-collapse">
@@ -223,7 +223,7 @@ export default function DashboardPage() {
           </div>
           <div className="surface divide-y divide-paper-100">
             {!properties.length ? (
-              <div className="px-6 py-10 text-center text-sm text-paper-400">No properties yet.</div>
+              <div className="px-6 py-10 text-center text-sm text-paper-400">No properties yet. Add your first property to get started.</div>
             ) : (
               properties.map((p) => (
                 <div key={p.id} className="flex items-center justify-between px-5 py-4">
@@ -244,7 +244,7 @@ export default function DashboardPage() {
           <h2 className="mb-3 text-sm font-semibold text-paper-800">Latest announcements</h2>
           <div className="space-y-3">
             {!announcements.length ? (
-              <div className="surface px-5 py-8 text-center text-sm text-paper-400">No announcements yet.</div>
+              <div className="surface px-5 py-8 text-center text-sm text-paper-400">No announcements yet. Create one to keep your tenants in the loop.</div>
             ) : (
               announcements.map((a) => (
                 <div key={a.id} className="surface px-5 py-4">

@@ -1,18 +1,5 @@
-'use client';
+import { Marketplace } from '@/components/marketplace/Marketplace';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { PageLoader } from '@/components/ui/Spinner';
-import { useAuth } from '@/lib/auth';
-
-export default function RootPage() {
-  const router = useRouter();
-  const { user, loading } = useAuth();
-
-  useEffect(() => {
-    if (loading) return;
-    router.replace(user ? '/dashboard' : '/login');
-  }, [user, loading, router]);
-
-  return <PageLoader />;
+export default function HomePage() {
+  return <Marketplace />;
 }

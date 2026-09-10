@@ -73,7 +73,7 @@ export default function RentPage() {
       await api.patch(`/organizations/${activeOrg.id}/rent-charges/${waiveTarget.id}/waive`, {
         reason: 'Waived by property manager',
       });
-      success('Charge waived');
+      success(`Charge of ${formatMoney(waiveTarget.amount, currency)} waived for ${waiveTarget.tenancy?.tenant?.fullName ?? 'tenant'}.`);
       setConfirmOpen(false);
       setWaiveTarget(null);
       load(1);
@@ -107,7 +107,7 @@ export default function RentPage() {
         <EmptyState
           icon={<Wallet className="h-8 w-8" />}
           title="No rent charges"
-          description="Generate charges to bill your tenants."
+          description="Generate monthly rent charges to bill your active tenants."
           action={
             role === 'OWNER' ? (
               <button className="btn-primary" onClick={generateNow} disabled={generating}>
@@ -201,7 +201,7 @@ export default function RentPage() {
         }}
         onConfirm={waive}
         title="Waive rent charge"
-        message={`Waive ${waiveTarget ? formatMoney(waiveTarget.amount, currency) : ''} for ${waiveTarget?.tenancy?.tenant?.fullName ?? 'this tenant'}?`}
+        message={`${waiveTarget ? `Waive ${formatMoney(waiveTarget.amount, currency)}` : ''} for ${waiveTarget?.tenancy?.tenant?.fullName ?? 'this tenant'}? The charge will be marked as waived and this tenant won't owe it. This can't be undone.`}
         confirmLabel={waiving ? 'Waiving…' : 'Waive'}
         danger
         loading={waiving}

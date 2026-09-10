@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Lock, Home, ArrowLeft, KeyRound } from 'lucide-react';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/auth';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { useToast } from '@/lib/toast';
 
 export default function ResetPasswordPage() {
@@ -61,14 +62,15 @@ function ResetForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper-50 px-6">
+      <PageTitle title="Set a new password" />
       <div className="w-full max-w-sm rounded-card border border-paper-200 bg-white p-8 shadow-card sm:p-10">
         <div className="mb-8 flex items-center gap-2.5">
           <div className="flex h-11 w-11 items-center justify-center rounded-card bg-brand-500 text-white shadow-sm">
             <Home className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-lg font-semibold tracking-tight text-paper-900">ProPrentals</div>
-            <div className="text-xs text-paper-400">Property Management Platform</div>
+            <div className="text-lg font-semibold tracking-tight text-paper-900">Habita</div>
+            <div className="text-xs text-paper-400">A happier way to manage your rentals</div>
           </div>
         </div>
 

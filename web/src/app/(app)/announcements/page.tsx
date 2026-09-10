@@ -70,7 +70,7 @@ export default function AnnouncementsPage() {
         scheduledAt: form.scheduledAt || undefined,
         expiresAt: form.expiresAt || undefined,
       });
-      success('Announcement published');
+      success(`Announcement "${form.title}" published.`);
       setCreateOpen(false);
       setForm({ title: '', message: '', audience: 'ALL_TENANTS', scheduledAt: '', expiresAt: '' });
       load(1);
@@ -101,7 +101,7 @@ export default function AnnouncementsPage() {
         <EmptyState
           icon={<Megaphone className="h-8 w-8" />}
           title="No announcements"
-          description="Create announcements to update your tenants."
+          description="Create an announcement to keep your tenants informed about maintenance schedules, policy changes, and important updates."
         />
       ) : (
         <>

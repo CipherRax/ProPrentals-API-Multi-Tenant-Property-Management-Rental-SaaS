@@ -24,7 +24,7 @@ export default function TenantAnnouncementsPage() {
 
   return (
     <div>
-      <PageHeader title="Announcements" description="News and notices from your landlord" />
+      <PageHeader title="Announcements" description="News and updates from your landlord" />
 
       {listQ.isLoading ? (
         <div className="space-y-3">
@@ -36,7 +36,7 @@ export default function TenantAnnouncementsPage() {
         <EmptyState
           icon={<Megaphone className="h-10 w-10" />}
           title="No announcements"
-          description="When your landlord publishes an announcement it will appear here."
+          description="When your landlord shares an update, it'll show up here."
         />
       ) : (
         <>

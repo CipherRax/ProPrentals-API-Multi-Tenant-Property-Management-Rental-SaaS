@@ -1,5 +1,5 @@
 /**
- * ProPrentals API client.
+ * Habita API client.
  *
  * Handles the API response envelope ({ success, data }), auth token storage
  * with automatic refresh rotation, and typed requests. Runs fully client-side.

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Mail, Home, ArrowLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/auth';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { useToast } from '@/lib/toast';
 
 export default function ForgotPasswordPage() {
@@ -28,14 +29,15 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper-50 px-6">
+      <PageTitle title="Reset your password" />
       <div className="w-full max-w-sm rounded-card border border-paper-200 bg-white p-8 shadow-card sm:p-10">
         <div className="mb-8 flex items-center gap-2.5">
           <div className="flex h-11 w-11 items-center justify-center rounded-card bg-brand-500 text-white shadow-sm">
             <Home className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-lg font-semibold tracking-tight text-paper-900">ProPrentals</div>
-            <div className="text-xs text-paper-400">Property Management Platform</div>
+            <div className="text-lg font-semibold tracking-tight text-paper-900">Habita</div>
+            <div className="text-xs text-paper-400">A happier way to manage your rentals</div>
           </div>
         </div>
 
@@ -49,8 +51,9 @@ export default function ForgotPasswordPage() {
             <Mail className="mx-auto h-8 w-8 text-emerald-600" />
             <h2 className="mt-3 text-base font-semibold text-paper-800">Check your inbox</h2>
             <p className="mt-1 text-sm text-paper-600">
-              We&apos;ve sent a password reset link to <span className="font-medium">{email}</span>.
-              It expires in 30 minutes.
+              If <span className="font-medium">{email}</span> has an account with us, you&apos;ll
+              find a reset link there shortly — it stays valid for 30 minutes. Didn&apos;t see it?
+              Take a peek in your spam folder.
             </p>
             <Link href="/login" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-800">
               <ArrowLeft className="h-4 w-4" /> Back to sign in

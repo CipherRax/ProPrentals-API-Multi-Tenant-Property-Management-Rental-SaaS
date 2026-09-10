@@ -95,7 +95,7 @@ export class PdfService {
         .fontSize(9)
         .fillColor('#888')
         .font('Helvetica')
-        .text('This receipt was generated automatically by ProPrentals.', { align: 'center' });
+        .text('This receipt was generated automatically by Habita.', { align: 'center' });
     });
   }
 

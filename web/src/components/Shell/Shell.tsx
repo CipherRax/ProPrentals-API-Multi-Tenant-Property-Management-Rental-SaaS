@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   LayoutDashboard, Building2, Users, Wallet, CreditCard, ReceiptText,
   Wrench, MessageSquare, Megaphone, ScrollText, FileBarChart, Shield,
@@ -54,6 +54,33 @@ export function Shell({ children }: { children: ReactNode }) {
   const isPlatformAdmin =
     user?.platformRole === 'SUPER_ADMIN' || user?.platformRole === 'SUPPORT_ADMIN';
 
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      '/dashboard': 'Dashboard',
+      '/properties': 'Properties',
+      '/tenants': 'Tenants',
+      '/rent': 'Rent',
+      '/payments': 'Payments',
+      '/receipts': 'Receipts',
+      '/maintenance': 'Maintenance',
+      '/messages': 'Messages',
+      '/announcements': 'Announcements',
+      '/inquiries': 'Inquiries',
+      '/reports': 'Reports',
+      '/staff': 'Staff',
+      '/subscription': 'Subscription',
+      '/profile': 'Profile',
+      '/notifications': 'Notifications',
+      '/admin': 'Platform Admin',
+    };
+    let title = titles[pathname];
+    if (!title) {
+      const base = pathname?.split('/').filter(Boolean)[0];
+      if (base) title = base.charAt(0).toUpperCase() + base.slice(1);
+    }
+    if (title) document.title = `${title} — Habita`;
+  }, [pathname]);
+
   const role = activeOrg?.myRole;
 
   const visible = landlordNav.filter((i) => shouldShow(i, role));
@@ -75,9 +102,9 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
         <div className="min-w-0">
           <div className="text-[15px] font-semibold leading-tight tracking-tight text-paper-900">
-            ProPrentals
+            Habita
           </div>
-          <div className="text-[11px] text-paper-400">Rental Management</div>
+          <div className="text-[11px] text-paper-400">Rental management</div>
         </div>
         <button
           onClick={() => setMobileOpen(false)}
@@ -220,12 +247,12 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <a
-              href="/public"
+            <Link
+              href="/"
               className="btn-secondary hidden py-1.5 sm:inline-flex"
             >
               Marketplace
-            </a>
+            </Link>
             {isTenant && (
               <Link
                 href="/portal"

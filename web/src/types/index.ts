@@ -1,4 +1,4 @@
-/** Domain types mirroring the ProPrentals API (Prisma schema + controllers). */
+/** Domain types mirroring the Habita API (Prisma schema + controllers). */
 
 export interface PaginationMeta {
   page: number;
@@ -477,8 +477,14 @@ export interface Listing {
     city?: string | null;
     county?: string | null;
     neighborhood?: string | null;
+    verificationStatus?: string | null;
     images?: { id?: string; url: string }[];
   };
+}
+
+export interface MarketSummary {
+  availableUnits: number;
+  counties: number;
 }
 
 export interface Inquiry {

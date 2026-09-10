@@ -164,7 +164,7 @@ export class BillingService {
       phoneNumber: normalizedPhone,
       amount: dto.amount,
       accountReference: `Sub-${organizationId.slice(0, 8)}`,
-      transactionDesc: 'ProPrentals subscription payment',
+      transactionDesc: 'Habita subscription payment',
     });
 
     await this.prisma.subscriptionPayment.update({
@@ -272,7 +272,7 @@ export class BillingService {
           claimed.organizationId,
           'SUBSCRIPTION_PAYMENT_CONFIRMED',
           'Subscription confirmed',
-          `Your ProPrentals subscription is now active.`,
+          `Your Habita subscription is now active.`,
         );
       }
     } catch (err) {

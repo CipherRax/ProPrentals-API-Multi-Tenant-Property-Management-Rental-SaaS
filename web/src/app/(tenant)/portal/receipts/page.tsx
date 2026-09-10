@@ -30,7 +30,7 @@ export default function TenantReceiptsPage() {
 
   return (
     <div>
-      <PageHeader title="Receipts" description="Receipts issued for payments you have made" />
+      <PageHeader title="Receipts" description="Receipts for all the payments you've made" />
 
       {receiptsQ.isLoading ? (
         <TableSkeleton rows={6} cols={4} />
@@ -38,7 +38,7 @@ export default function TenantReceiptsPage() {
         <EmptyState
           icon={<ReceiptText className="h-10 w-10" />}
           title="No receipts yet"
-          description="Once a payment is confirmed, a receipt is issued and appears here."
+          description="Once a payment is confirmed, your receipt will show up here."
         />
       ) : (
         <div className="surface overflow-hidden">

@@ -141,7 +141,7 @@ export default function NotificationsPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-paper-800">Preferences</h2>
+          <h2 className="mb-3 text-sm font-semibold text-paper-800">Notification preferences</h2>
           <div className="surface divide-y divide-paper-100">
             {prefs.map((p) => (
               <div key={p.category} className="px-5 py-3">

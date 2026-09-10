@@ -28,10 +28,10 @@ export class TransactionalEmailService {
   async sendPasswordReset(email: string, recipientName: string, resetLink: string): Promise<void> {
     const result = await this.emailProvider.send(
       email,
-      'Reset your ProPrentals password',
+      'Reset your Habita password',
       passwordReset({
         recipientName: recipientName || 'there',
-        organizationName: 'ProPrentals',
+        organizationName: 'Habita',
         actionLabel: 'Reset password',
         actionUrl: resetLink,
       }),
@@ -50,7 +50,7 @@ export class TransactionalEmailService {
   ): Promise<void> {
     const emailResult = await this.emailProvider.send(
       email,
-      `You're invited to join ${organizationName} on ProPrentals`,
+      `You're invited to join ${organizationName} on Habita`,
       tenantInvitation({
         recipientName: tenantName || 'there',
         organizationName,
@@ -66,7 +66,7 @@ export class TransactionalEmailService {
     if (phone) {
       const smsResult = await this.smsProvider.send(
         phone,
-        `${organizationName} invited you to ProPrentals. Activate your tenant account: ${invitationLink}`,
+        `${organizationName} invited you to Habita. Activate your tenant account: ${invitationLink}`,
       );
       if (!smsResult.success) {
         this.logger.warn(`Invitation SMS to ${phone} failed: ${smsResult.errorMessage}`);
@@ -83,7 +83,7 @@ export class TransactionalEmailService {
   ): Promise<void> {
     const emailResult = await this.emailProvider.send(
       email,
-      `You're invited to join ${organizationName} on ProPrentals`,
+      `You're invited to join ${organizationName} on Habita`,
       staffInvitation({
         recipientName: fullName || 'there',
         organizationName,
