@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export function Modal({
   open,
@@ -37,20 +37,22 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-paper-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full ${widths[size]} rounded-card bg-white shadow-card-hover`}>
-        <div className="flex items-center justify-between border-b border-paper-100 px-5 py-4">
+      <div className="absolute inset-0 animate-fade-in bg-paper-900/50" onClick={onClose} />
+      <div
+        className={`relative z-10 w-full ${widths[size]} animate-zoom-in rounded-card bg-white shadow-modal`}
+      >
+        <div className="flex items-center justify-between border-b border-paper-100 px-6 py-4">
           <h2 className="text-base font-semibold text-paper-800">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-paper-400 hover:bg-paper-100 hover:text-paper-600"
+            className="rounded-md p-1 text-paper-400 transition-colors hover:bg-paper-100 hover:text-paper-600"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-5">{children}</div>
+        <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-paper-100 px-5 py-4">{footer}</div>
+          <div className="flex justify-end gap-2 border-t border-paper-100 px-6 py-4">{footer}</div>
         )}
       </div>
     </div>
@@ -97,7 +99,20 @@ export function ConfirmModal({
         </>
       }
     >
-      <p className="text-sm text-paper-600">{message}</p>
+      <div className="flex flex-col items-center py-2 text-center">
+        <div
+          className={`flex h-14 w-14 items-center justify-center rounded-full ${
+            danger ? 'bg-red-50 text-red-600' : 'bg-brand-50 text-brand-600'
+          }`}
+        >
+          {danger ? (
+            <AlertTriangle className="h-7 w-7" />
+          ) : (
+            <CheckCircle2 className="h-7 w-7" />
+          )}
+        </div>
+        <p className="mt-4 max-w-sm text-sm text-paper-600">{message}</p>
+      </div>
     </Modal>
   );
 }

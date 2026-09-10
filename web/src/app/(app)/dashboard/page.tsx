@@ -16,10 +16,10 @@ import { canAny } from '@/lib/rbac';
 import type { FinancialReport, OccupancyReport, Property, Payment, Announcement } from '@/types';
 
 const METHOD_COLORS: Record<string, string> = {
-  MPESA: '#2f6666',
+  MPESA: '#00A550',
   CASH: '#bf8f2e',
-  BANK_TRANSFER: '#7d5a1c',
-  OTHER: '#969282',
+  BANK_TRANSFER: '#0B4A26',
+  OTHER: '#6B7280',
 };
 
 export default function DashboardPage() {
@@ -270,7 +270,7 @@ function Stat({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-paper-500">{label}</p>
-          <p className="mt-2 text-2xl font-semibold tracking-tightest tabular-nums text-paper-900">{value}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-paper-900">{value}</p>
         </div>
         <div className={`flex h-10 w-10 items-center justify-center rounded-md ${accent ? 'bg-brand-700 text-white' : 'bg-paper-100 text-paper-500'}`}>
           {icon}

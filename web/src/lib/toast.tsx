@@ -57,7 +57,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="pointer-events-none fixed right-4 top-4 z-[100] flex w-full max-w-sm flex-col gap-2">
         {toasts.map((t) => (
-          <Toast key={t.id} type={t.type} message={t.message} onDismiss={() => dismiss(t.id)} />
+          <div key={t.id} className="animate-slide-in-right">
+            <Toast type={t.type} message={t.message} onDismiss={() => dismiss(t.id)} />
+          </div>
         ))}
       </div>
     </ToastContext.Provider>

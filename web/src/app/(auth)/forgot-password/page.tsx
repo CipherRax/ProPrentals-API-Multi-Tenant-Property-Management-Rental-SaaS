@@ -27,19 +27,19 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper-100 px-6">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-paper-50 px-6">
+      <div className="w-full max-w-sm rounded-card border border-paper-200 bg-white p-8 shadow-card sm:p-10">
         <div className="mb-8 flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-700 text-white">
+          <div className="flex h-11 w-11 items-center justify-center rounded-card bg-brand-500 text-white shadow-sm">
             <Home className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-lg font-semibold tracking-tightest text-paper-900">ProPrentals</div>
+            <div className="text-lg font-semibold tracking-tight text-paper-900">ProPrentals</div>
             <div className="text-xs text-paper-400">Property Management Platform</div>
           </div>
         </div>
 
-        <h1 className="text-xl font-semibold tracking-tightest text-paper-900">Reset your password</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-paper-900">Reset your password</h1>
         <p className="mt-1 text-sm text-paper-500">
           Enter your account email and we&apos;ll send you a reset link.
         </p>
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
             <div>
               <label className="label" htmlFor="email">Email</label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-300" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-400" />
                 <input
                   id="email"
                   type="email"

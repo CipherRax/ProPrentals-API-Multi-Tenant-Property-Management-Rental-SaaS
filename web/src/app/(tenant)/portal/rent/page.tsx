@@ -318,7 +318,7 @@ function Stat({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-paper-500">{label}</p>
-          <p className="mt-2 text-2xl font-semibold tracking-tightest tabular-nums text-paper-900">{value}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-paper-900">{value}</p>
         </div>
         <div className={`flex h-10 w-10 items-center justify-center rounded-md ${accent ? 'bg-brand-700 text-white' : 'bg-paper-100 text-paper-500'}`}>
           {icon}

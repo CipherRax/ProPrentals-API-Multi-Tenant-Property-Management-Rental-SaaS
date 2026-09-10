@@ -55,11 +55,11 @@ export function TenantShell({ children }: { children: ReactNode }) {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-3 border-b border-paper-200 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-700 text-white">
+        <div className="flex h-9 w-9 items-center justify-center rounded-card bg-brand-500 text-white shadow-sm">
           <Home className="h-[18px] w-[18px]" />
         </div>
         <div className="min-w-0">
-          <div className="text-[15px] font-semibold leading-tight tracking-tightest text-paper-900">
+          <div className="text-[15px] font-semibold leading-tight tracking-tight text-paper-900">
             ProPrentals
           </div>
           <div className="text-[11px] text-paper-400">Tenant portal</div>

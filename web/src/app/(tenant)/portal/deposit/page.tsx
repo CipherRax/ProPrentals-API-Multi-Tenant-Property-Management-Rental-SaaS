@@ -143,7 +143,7 @@ function Stat({
   return (
     <div className={`surface p-5 ${accent ? 'border-brand-200 bg-brand-50/30' : ''}`}>
       <p className="text-sm font-medium text-paper-500">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tightest tabular-nums text-paper-900">{value}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-paper-900">{value}</p>
     </div>
   );
 }

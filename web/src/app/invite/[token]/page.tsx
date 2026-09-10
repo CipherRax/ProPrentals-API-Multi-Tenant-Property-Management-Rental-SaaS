@@ -98,7 +98,7 @@ function InviteFlow() {
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-700 text-white">
             <Home className="h-5 w-5" />
           </div>
-          <span className="text-lg font-semibold tracking-tightest text-paper-900">ProPrentals</span>
+          <span className="text-lg font-semibold tracking-tight text-paper-900">ProPrentals</span>
         </div>
 
         {loading ? (

@@ -82,7 +82,7 @@ export default function PublicPage() {
   const showFilters = search || county || minPrice || maxPrice;
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7]">
+    <div className="min-h-screen bg-paper-50">
       <header className="sticky top-0 z-20 border-b border-paper-100 bg-white/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link href="/public" className="flex items-center gap-2.5">
