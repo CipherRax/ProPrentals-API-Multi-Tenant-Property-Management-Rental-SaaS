@@ -28,8 +28,8 @@ export default function RegisterPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await register(form);
-      router.push('/dashboard');
+      const home = await register(form);
+      router.replace(home);
     } catch (err) {
       error(getErrorMessage(err));
     } finally {

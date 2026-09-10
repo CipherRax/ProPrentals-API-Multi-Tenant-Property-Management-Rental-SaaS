@@ -6,9 +6,10 @@ import { useState, type ReactNode } from 'react';
 import {
   LayoutDashboard, Building2, Users, Wallet, CreditCard, ReceiptText,
   Wrench, MessageSquare, Megaphone, ScrollText, FileBarChart, Shield,
-  Gem, Home, LogOut, Bell, Menu, X, Building,
+  Gem, Home, LogOut, Bell, Menu, X, Building, User,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
+import { resolveAssetUrl } from '@/lib/api';
 import { canAny, type Permission } from '@/lib/rbac';
 import { useUnreadCount } from '@/hooks/useNotifications';
 import type { OrgRole } from '@/types';
@@ -36,6 +37,7 @@ const landlordNav: NavItem[] = [
   { href: '/reports', label: 'Reports', icon: <FileBarChart className="h-[18px] w-[18px]" />, permissions: ['report:read'] },
   { href: '/staff', label: 'Staff', icon: <Shield className="h-[18px] w-[18px]" />, permissions: ['staff:manage'] },
   { href: '/subscription', label: 'Subscription', icon: <Gem className="h-[18px] w-[18px]" />, permissions: ['subscription:manage'] },
+  { href: '/profile', label: 'Profile', icon: <User className="h-[18px] w-[18px]" />, permissions: ['message:view'] },
 ];
 
 function shouldShow(item: NavItem, role?: OrgRole): boolean {
@@ -46,7 +48,7 @@ function shouldShow(item: NavItem, role?: OrgRole): boolean {
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, organizations, activeOrg, setActiveOrg, logout } = useAuth();
+  const { user, organizations, activeOrg, setActiveOrg, logout, isTenant } = useAuth();
   const unread = useUnreadCount();
 
   const isPlatformAdmin =
@@ -142,9 +144,18 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <div className="border-t border-paper-200 p-3">
         <div className="flex items-center gap-3 rounded-panel px-2 py-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-700/10 text-sm font-semibold text-brand-800">
-            {user ? initials(`${user.firstName} ${user.lastName}`) : '?'}
-          </div>
+          {user?.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={resolveAssetUrl(user.avatarUrl)}
+              alt=""
+              className="h-9 w-9 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-700/10 text-sm font-semibold text-brand-800">
+              {user ? initials(`${user.firstName} ${user.lastName}`) : '?'}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium text-paper-800">
               {user ? `${user.firstName} ${user.lastName}` : '…'}
@@ -153,6 +164,13 @@ export function Shell({ children }: { children: ReactNode }) {
               {role ? roleLabel(role) : user?.email}
             </div>
           </div>
+          <Link
+            href="/profile"
+            title="My profile"
+            className="rounded-md p-1.5 text-paper-400 hover:bg-paper-200/60 hover:text-paper-600"
+          >
+            <User className="h-4 w-4" />
+          </Link>
           <button
             onClick={() => logout().then(() => (window.location.href = '/login'))}
             className="rounded-md p-1.5 text-paper-400 hover:bg-paper-200/60 hover:text-paper-600"
@@ -208,6 +226,14 @@ export function Shell({ children }: { children: ReactNode }) {
             >
               Marketplace
             </a>
+            {isTenant && (
+              <Link
+                href="/portal"
+                className="btn-secondary hidden py-1.5 sm:inline-flex"
+              >
+                Tenant portal
+              </Link>
+            )}
             <Link
               href="/notifications"
               className="relative rounded-md border border-paper-200 bg-white p-2 text-paper-500 hover:text-paper-700"

@@ -79,7 +79,7 @@ export default function NotificationsPage() {
         category: p.category,
         [field]: value,
       });
-      setPrefs((prev) => prev.map((x) => (x.id === p.id ? { ...x, [field]: value } : x)));
+      setPrefs((prev) => prev.map((x) => (x.category === p.category ? { ...x, [field]: value } : x)));
     } catch (e) {
       error(getErrorMessage(e));
     }
@@ -144,7 +144,7 @@ export default function NotificationsPage() {
           <h2 className="mb-3 text-sm font-semibold text-paper-800">Preferences</h2>
           <div className="surface divide-y divide-paper-100">
             {prefs.map((p) => (
-              <div key={p.id} className="px-5 py-3">
+              <div key={p.category} className="px-5 py-3">
                 <div className="text-sm font-medium capitalize text-paper-700">
                   {p.category.toLowerCase().replace(/_/g, ' ')}
                 </div>

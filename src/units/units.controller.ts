@@ -7,8 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UnitsService } from './units.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
@@ -17,6 +21,7 @@ import { QueryUnitsDto } from './dto/query-units.dto';
 import { AddUnitImageDto } from './dto/add-unit-image.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { OrgRoles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('units')
 @ApiBearerAuth()
@@ -26,6 +31,7 @@ export class UnitsController {
   constructor(private readonly unitsService: UnitsService) {}
 
   @Post()
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   create(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,
@@ -56,6 +62,7 @@ export class UnitsController {
   }
 
   @Patch(':unitId')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   update(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,
@@ -67,6 +74,7 @@ export class UnitsController {
   }
 
   @Delete(':unitId')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   remove(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,
@@ -77,6 +85,7 @@ export class UnitsController {
   }
 
   @Post(':unitId/images')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   addImage(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,
@@ -87,7 +96,21 @@ export class UnitsController {
     return this.unitsService.addImage(userId, organizationId, propertyId, unitId, dto);
   }
 
+  @Post(':unitId/images/upload')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
+  @UseInterceptors(FilesInterceptor('files', 10, { storage: memoryStorage() }))
+  uploadImages(
+    @CurrentUser('userId') userId: string,
+    @Param('organizationId') organizationId: string,
+    @Param('propertyId') propertyId: string,
+    @Param('unitId') unitId: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.unitsService.uploadImages(userId, organizationId, propertyId, unitId, files);
+  }
+
   @Delete(':unitId/images/:imageId')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   removeImage(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,

@@ -3,6 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { resolve } from 'path';
+import express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
@@ -10,11 +12,25 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
 
-  app.use(helmet());
+  // CORP must allow cross-origin so the web app (frontendUrl) can render
+  // uploaded images via <img> tags; otherwise browsers block them despite CORS.
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginOpenerPolicy: false,
+    }),
+  );
   app.enableCors({
     origin: config.get<string>('frontendUrl'),
     credentials: true,
   });
+
+  // Serve locally uploaded images (storage provider "local") statically
+  // so PropertyImage / UnitImage URLs work in dashboards and the marketplace.
+  app.use(
+    '/uploads',
+    express.static(resolve(process.cwd(), config.get<string>('storage.localDir') ?? 'uploads')),
+  );
 
   // API_PREFIX already encodes the version segment (default "api/v1"),
   // so future breaking versions are introduced by changing this prefix

@@ -58,9 +58,13 @@ export class DepositsService {
     }
 
     const deposit = await this.getOwnedDepositByTenancy(organizationId, tenancyId);
-    if (deposit.status === 'PROCESSING' || deposit.status === 'SETTLED') {
+    if (
+      deposit.status === 'FULLY_PAID' ||
+      deposit.status === 'PROCESSING' ||
+      deposit.status === 'SETTLED'
+    ) {
       throw new BadRequestException(
-        `Cannot record a deposit payment once the deposit is ${deposit.status.toLowerCase()}`,
+        `Cannot record a deposit payment once the deposit is ${deposit.status.toLowerCase()} — a deposit is a one-time payment`,
       );
     }
 

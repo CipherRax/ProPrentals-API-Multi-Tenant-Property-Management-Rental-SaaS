@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import { EmailProvider, SendResult } from './provider.interfaces';
+import { EmailProvider, EmailSendPayload, SendResult } from './provider.interfaces';
 
 // Real SMTP delivery via nodemailer. Swappable for SendGrid/Postmark/SES
 // later without touching any calling code — everything upstream depends
@@ -34,7 +34,7 @@ export class SmtpEmailProvider implements EmailProvider {
     return this.transporter;
   }
 
-  async send(to: string, subject: string, body: string): Promise<SendResult> {
+  async send(to: string, subject: string, body: EmailSendPayload): Promise<SendResult> {
     const transporter = this.getTransporter();
     if (!transporter) {
       return {
@@ -48,7 +48,8 @@ export class SmtpEmailProvider implements EmailProvider {
         from: this.config.get<string>('smtp.from'),
         to,
         subject,
-        text: body,
+        text: body.text,
+        ...(body.html ? { html: body.html } : {}),
       });
       return { success: true, providerMessageId: info.messageId };
     } catch (err) {

@@ -65,6 +65,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.join(`conversation:${conversation.id}`);
       }
 
+      // Same for staff-to-staff direct messages.
+      const peerConversations = await this.prisma.peerConversation.findMany({
+        where: {
+          organization: { members: { some: { userId: payload.sub, isActive: true } } },
+          OR: [{ participantOneId: payload.sub }, { participantTwoId: payload.sub }],
+        },
+        select: { id: true },
+      });
+      for (const peer of peerConversations) {
+        client.join(`peer-conversation:${peer.id}`);
+      }
+
       const wasOffline = !this.presence.isOnline(payload.sub);
       this.presence.addConnection(payload.sub, client.id);
 
@@ -72,6 +84,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         for (const conversation of conversations) {
           client
             .to(`conversation:${conversation.id}`)
+            .emit('presence:online', { userId: payload.sub });
+        }
+      }
+      if (wasOffline) {
+        for (const peer of peerConversations) {
+          client
+            .to(`peer-conversation:${peer.id}`)
             .emit('presence:online', { userId: payload.sub });
         }
       }
@@ -99,6 +118,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       for (const conversation of conversations) {
         this.server.to(`conversation:${conversation.id}`).emit('presence:offline', { userId });
       }
+      const peerConversations = await this.prisma.peerConversation.findMany({
+        where: {
+          organization: { members: { some: { userId, isActive: true } } },
+          OR: [{ participantOneId: userId }, { participantTwoId: userId }],
+        },
+        select: { id: true },
+      });
+      for (const peer of peerConversations) {
+        this.server.to(`peer-conversation:${peer.id}`).emit('presence:offline', { userId });
+      }
     }
   }
 
@@ -117,11 +146,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   broadcastNewMessage(conversationId: string, message: unknown) {
     this.server.to(`conversation:${conversationId}`).emit('message:new', message);
+    this.server.to(`peer-conversation:${conversationId}`).emit('message:new', message);
   }
 
   broadcastRead(conversationId: string, userId: string) {
     this.server
       .to(`conversation:${conversationId}`)
+      .emit('message:read', { userId, readAt: new Date() });
+    this.server
+      .to(`peer-conversation:${conversationId}`)
       .emit('message:read', { userId, readAt: new Date() });
   }
 

@@ -21,14 +21,14 @@ import { OrgRolesGuard } from './auth/guards/org-roles.guard';
 
 import { UsersModule } from './users/users.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { StaffModule } from './staff/staff.module';
 import { HealthModule } from './health/health.module';
 import { PropertiesModule } from './properties/properties.module';
 import { BuildingsModule } from './buildings/buildings.module';
 import { UnitsModule } from './units/units.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { TenanciesModule } from './tenancies/tenancies.module';
-import { TenantInvitationsModule } from './tenant-invitations/tenant-invitations.module';
-import { RentConfigurationsModule } from './rent-configurations/rent-configurations.module';
+import { TenantInvitationsModule } from './tenant-invitations/tenant-invitations.module';import { RentConfigurationsModule } from './rent-configurations/rent-configurations.module';
 import { RentChargesModule } from './rent-charges/rent-charges.module';
 import { RentJobsModule } from './rent-jobs/rent-jobs.module';
 import { LedgerModule } from './ledger/ledger.module';
@@ -77,6 +77,7 @@ import { AdminModule } from './admin/admin.module';
     AuthModule,
     UsersModule,
     OrganizationsModule,
+    StaffModule,
     PropertiesModule,
     BuildingsModule,
     UnitsModule,

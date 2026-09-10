@@ -41,19 +41,68 @@ export class MessagingService {
     await this.organizations.assertMembership(userId, organizationId);
 
     const where = { organizationId };
-    const [data, total] = await this.prisma.$transaction([
+    const [conversations, total] = await this.prisma.$transaction([
       this.prisma.conversation.findMany({
         where,
         skip: paginationSkip(query.page, query.limit),
         take: query.limit,
         orderBy: { updatedAt: 'desc' },
         include: {
-          tenantUser: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          tenantUser: {
+            select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true },
+          },
           messages: { orderBy: { createdAt: 'desc' }, take: 1 },
         },
       }),
       this.prisma.conversation.count({ where }),
     ]);
+
+    const tenantUserIds = conversations.map((c) => c.tenantUserId);
+    const profiles = tenantUserIds.length
+      ? await this.prisma.tenantProfile.findMany({
+          where: { organizationId, userId: { in: tenantUserIds }, deletedAt: null },
+          select: { id: true, userId: true, fullName: true, email: true, profileImageUrl: true },
+        })
+      : [];
+    const profileByUserId = new Map(profiles.map((p) => [p.userId, p]));
+
+    const ids = conversations.map((c) => c.id);
+    const readStates = ids.length
+      ? await this.prisma.conversationReadState.findMany({
+          where: { userId, conversationId: { in: ids } },
+        })
+      : [];
+    const readBy = new Map(readStates.map((r) => [r.conversationId, r.lastReadAt]));
+
+    const data = await Promise.all(
+      conversations.map(async (c) => {
+        const lastMessage = c.messages[0] ?? null;
+        const unreadCount = await this.prisma.message.count({
+          where: {
+            conversationId: c.id,
+            senderUserId: { not: userId },
+            createdAt: { gt: readBy.get(c.id) ?? new Date(0) },
+          },
+        });
+        const profile = profileByUserId.get(c.tenantUserId);
+        const user = c.tenantUser;
+        return {
+          id: c.id,
+          organizationId: c.organizationId,
+          tenantUserId: c.tenantUserId,
+          tenantProfileId: profile?.id ?? null,
+          tenant: {
+            id: user?.id ?? null,
+            fullName: profile?.fullName ?? user ? `${user.firstName} ${user.lastName}` : 'Tenant',
+            email: profile?.email ?? user?.email ?? '',
+            avatarUrl: profile?.profileImageUrl ?? user?.avatarUrl ?? null,
+          },
+          lastMessage: lastMessage?.body ?? null,
+          unreadCount,
+          updatedAt: c.updatedAt,
+        };
+      }),
+    );
 
     return buildPaginatedResult(data, total, query.page, query.limit);
   }
@@ -158,6 +207,9 @@ export class MessagingService {
         skip: paginationSkip(query.page, query.limit),
         take: query.limit,
         orderBy: { createdAt: 'desc' },
+        include: {
+          sender: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        },
       }),
       this.prisma.message.count({ where }),
     ]);

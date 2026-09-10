@@ -4,6 +4,7 @@ import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { AuditService } from '../common/utils/audit.service';
+import { StorageService } from '../storage/storage.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { QueryPropertiesDto } from './dto/query-properties.dto';
@@ -19,6 +20,7 @@ export class PropertiesService {
     private readonly organizations: OrganizationsService,
     private readonly subscriptions: SubscriptionsService,
     private readonly audit: AuditService,
+    private readonly storage: StorageService,
   ) {}
 
   private assertCanManage(role: OrgRole) {
@@ -152,6 +154,36 @@ export class PropertiesService {
     });
   }
 
+  async uploadImages(
+    userId: string,
+    organizationId: string,
+    propertyId: string,
+    files: Express.Multer.File[],
+  ) {
+    const membership = await this.organizations.assertMembership(userId, organizationId);
+    this.assertCanManage(membership.role);
+    await this.getOwnedProperty(organizationId, propertyId);
+
+    if (!files?.length) throw new NotFoundException('No images provided');
+
+    const last = await this.prisma.propertyImage.findFirst({
+      where: { propertyId },
+      orderBy: { sortOrder: 'desc' },
+    });
+    let sortOrder = last ? last.sortOrder + 1 : 0;
+
+    const images = [];
+    for (const file of files) {
+      const { url } = await this.storage.saveFile(file, 'properties');
+      images.push(
+        await this.prisma.propertyImage.create({
+          data: { propertyId, url, sortOrder: sortOrder++ },
+        }),
+      );
+    }
+    return images;
+  }
+
   async removeImage(userId: string, organizationId: string, propertyId: string, imageId: string) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     this.assertCanManage(membership.role);
@@ -162,6 +194,7 @@ export class PropertiesService {
       throw new NotFoundException('Image not found on this property');
     }
     await this.prisma.propertyImage.delete({ where: { id: imageId } });
+    await this.storage.deleteByUrl(image.url);
     return { message: 'Image removed' };
   }
 

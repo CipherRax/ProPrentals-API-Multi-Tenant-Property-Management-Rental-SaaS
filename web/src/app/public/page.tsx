@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Home, Search, MapPin, BedDouble, Bath, Ruler, Filter } from 'lucide-react';
-import { api, formatMoney, titleCase } from '@/lib/api';
+import { api, formatMoney, titleCase, resolveAssetUrl } from '@/lib/api';
 import { PageLoader } from '@/components/ui/Spinner';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/lib/toast';
@@ -50,6 +50,10 @@ export default function PublicPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    setPhotoIdx(0);
+  }, [selected]);
+
   const submitInquiry = async () => {
     if (!selected) return;
     setSending(true);
@@ -68,6 +72,10 @@ export default function PublicPage() {
       setSending(false);
     }
   };
+  const [photoIdx, setPhotoIdx] = useState(0);
+
+  const listingImages = (l: Listing) =>
+    l.images?.length ? l.images : (l.property?.images ?? []);
 
   const currency = 'KES';
 
@@ -183,16 +191,21 @@ export default function PublicPage() {
                 onClick={() => setSelected(l)}
                 className="surface overflow-hidden text-left transition-shadow hover:shadow-card-hover"
               >
-                <div className="flex h-40 items-center justify-center bg-paper-100">
-                  {l.images && l.images[0] ? (
+                <div className="relative flex h-40 items-center justify-center bg-paper-100">
+                  {listingImages(l)[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={l.images[0].url}
+                      src={resolveAssetUrl(listingImages(l)[0].url)}
                       alt={l.unitNumber}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <Home className="h-10 w-10 text-paper-300" />
+                  )}
+                  {listingImages(l).length > 1 && (
+                    <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
+                      {listingImages(l).length} photos
+                    </span>
                   )}
                 </div>
                 <div className="p-4">
@@ -257,6 +270,35 @@ export default function PublicPage() {
       >
         {selected && (
           <div className="space-y-4">
+            {listingImages(selected).length > 0 && (
+              <div>
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-paper-100">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolveAssetUrl(listingImages(selected)[photoIdx]?.url)}
+                    alt={selected.unitNumber}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                {listingImages(selected).length > 1 && (
+                  <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                    {listingImages(selected).map((img, i) => (
+                      <button
+                        key={`${img.url}-${i}`}
+                        type="button"
+                        onClick={() => setPhotoIdx(i)}
+                        className={`h-14 w-20 shrink-0 overflow-hidden rounded-md border-2 transition ${
+                          i === photoIdx ? 'border-brand-600' : 'border-transparent opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={resolveAssetUrl(img.url)} alt="" className="h-full w-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-2xl font-semibold text-paper-900">
                 {formatMoney(selected.baseRent, currency)}

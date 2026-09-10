@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { api, ApiError } from '@/lib/api';
 import type { CurrentUser, OrganizationWithRole, OrgRole } from '@/types';
+import type { MyTenantProfile } from '@/types/tenant';
 
 interface AuthPayload {
   user: {
@@ -32,17 +33,19 @@ interface AuthContextValue {
   user: CurrentUser | null;
   organizations: OrganizationWithRole[];
   activeOrg: OrganizationWithRole | null;
+  isTenant: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<string>;
   register: (data: {
     firstName: string;
     lastName: string;
     email: string;
     password: string;
     organizationName: string;
-  }) => Promise<void>;
+  }) => Promise<string>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  refreshOrganizations: () => Promise<void>;
   setActiveOrg: (orgId: string) => void;
 }
 
@@ -52,7 +55,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [organizations, setOrganizations] = useState<OrganizationWithRole[]>([]);
   const [activeOrg, setActiveOrgState] = useState<OrganizationWithRole | null>(null);
+  const [isTenant, setIsTenant] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  /**
+   * A user counts as a tenant when they hold at least one TenantProfile with an
+   * ACTIVE or PENDING tenancy. The /tenants/me/profiles endpoint already filters
+   * its `tenancies` include to those statuses.
+   */
+  const loadTenantStatus = useCallback(async (): Promise<boolean> => {
+    try {
+      const data = await api.get<MyTenantProfile[]>('/tenants/me/profiles');
+      const profiles = Array.isArray(data) ? data : [];
+      const active = profiles.some((p) => (p.tenancies?.length ?? 0) > 0);
+      setIsTenant(active);
+      return active;
+    } catch {
+      setIsTenant(false);
+      return false;
+    }
+  }, []);
 
   const loadOrganizations = useCallback(async (): Promise<OrganizationWithRole[]> => {
     const data = await api.get<OrganizationWithRole[]>('/organizations/me');
@@ -81,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         await refreshUser();
         await loadOrganizations();
+        await loadTenantStatus();
       } catch {
         if (mounted) api.clearTokens();
       } finally {
@@ -91,16 +114,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [refreshUser, loadOrganizations]);
+  }, [refreshUser, loadOrganizations, loadTenantStatus]);
 
   const login = useCallback(
     async (email: string, password: string) => {
       const data = await api.post<AuthPayload>('/auth/login', { email, password });
       api.setTokens(data.accessToken, data.refreshToken);
       await refreshUser();
-      await loadOrganizations();
+      const orgs = await loadOrganizations();
+      const tenantState = await loadTenantStatus();
+      return orgs.length > 0 ? '/dashboard' : tenantState ? '/portal' : '/dashboard';
     },
-    [refreshUser, loadOrganizations],
+    [refreshUser, loadOrganizations, loadTenantStatus],
   );
 
   const register = useCallback(
@@ -115,8 +140,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.setTokens(res.accessToken, res.refreshToken);
       await refreshUser();
       await loadOrganizations();
+      await loadTenantStatus();
+      return '/dashboard';
     },
-    [refreshUser, loadOrganizations],
+    [refreshUser, loadOrganizations, loadTenantStatus],
   );
 
   const logout = useCallback(async () => {
@@ -130,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setOrganizations([]);
     setActiveOrgState(null);
+    setIsTenant(false);
   }, []);
 
   const setActiveOrg = useCallback(
@@ -146,14 +174,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       organizations,
       activeOrg,
+      isTenant,
       loading,
       login,
       register,
       logout,
       refreshUser,
+      refreshOrganizations: async () => {
+        await loadOrganizations();
+      },
       setActiveOrg,
     }),
-    [user, organizations, activeOrg, loading, login, register, logout, refreshUser, setActiveOrg],
+    [user, organizations, activeOrg, isTenant, loading, login, register, logout, refreshUser, loadOrganizations, setActiveOrg],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

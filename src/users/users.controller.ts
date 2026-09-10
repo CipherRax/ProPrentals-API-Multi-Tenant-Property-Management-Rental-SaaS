@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -20,5 +31,11 @@ export class UsersController {
   @Patch('me')
   updateMe(@CurrentUser('userId') userId: string, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateProfile(userId, dto);
+  }
+
+  @Post('me/avatar')
+  @UseInterceptors(FileInterceptor('files', { storage: memoryStorage() }))
+  uploadAvatar(@CurrentUser('userId') userId: string, @UploadedFile() file: Express.Multer.File) {
+    return this.usersService.uploadAvatar(userId, file);
   }
 }

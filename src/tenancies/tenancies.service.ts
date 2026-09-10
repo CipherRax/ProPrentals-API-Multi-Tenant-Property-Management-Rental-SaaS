@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { BillingFrequency, OrgRole, Prisma, TenancyStatus } from '@prisma/client';
@@ -10,6 +11,7 @@ import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { AuditService } from '../common/utils/audit.service';
 import { LedgerService } from '../ledger/ledger.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTenancyDto } from './dto/create-tenancy.dto';
 import { TerminateTenancyDto } from './dto/terminate-tenancy.dto';
 import { QueryTenanciesDto } from './dto/query-tenancies.dto';
@@ -33,11 +35,14 @@ interface TenancyTerms {
 
 @Injectable()
 export class TenanciesService {
+  private readonly logger = new Logger(TenanciesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
     private readonly audit: AuditService,
     private readonly ledger: LedgerService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private assertCanManage(role: OrgRole) {
@@ -142,6 +147,153 @@ export class TenanciesService {
     });
 
     return tenancy;
+  }
+
+  // ── Auto-activation (scheduled daily via BullMQ) ───────────────────
+
+  /**
+   * Flips PENDING → ACTIVE for every tenancy whose start date has
+   * arrived, then brings the surrounding state (unit availability,
+   * tenant profile, rent configuration, security deposit) in line —
+   * the exact same invariants createTenancyWithinTransaction establishes
+   * for an immediately-active tenancy. This is what closes the gap where
+   * a future-dated tenancy sat PENDING forever once its day arrived.
+   *
+   * The security deposit is created here ONCE for the tenancy's life
+   * (deposits are a single one-time payment, unlike rent) and never
+   * touched again by this job. The nightly rent-charge job picks the
+   * now-ACTIVE tenancy up afterwards for its first period's charge.
+   */
+  async activateDueTenancies(): Promise<{
+    activated: number;
+    skipped: number;
+    errors: number;
+  }> {
+    const dueTenancies = await this.prisma.tenancy.findMany({
+      where: { status: 'PENDING', startDate: { lte: new Date() } },
+      select: {
+        id: true,
+        organizationId: true,
+        unitId: true,
+        tenantProfileId: true,
+        startDate: true,
+        rentAmount: true,
+        depositAmount: true,
+        paymentDueDay: true,
+        billingFrequency: true,
+        tenantProfile: {
+          select: { userId: true, email: true, phone: true, status: true },
+        },
+      },
+    });
+
+    let activated = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    for (const tenancy of dueTenancies) {
+      try {
+        if (tenancy.tenantProfile.status === 'INVITED' || !tenancy.tenantProfile.userId) {
+          // A tenant with no account yet can't be upgraded; the
+          // invitation acceptance flow will treat the tenancy the same
+          // way it already does today.
+          skipped += 1;
+          continue;
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+          await tx.tenancy.update({
+            where: { id: tenancy.id },
+            data: { status: 'ACTIVE' },
+          });
+
+          // Derive unit availability from the tenancy outcome — never
+          // set independently (spec §9).
+          await tx.unit.update({
+            where: { id: tenancy.unitId },
+            data: { availabilityStatus: 'OCCUPIED', isPubliclyListable: false },
+          });
+
+          if (tenancy.tenantProfile.status === 'INVITED') {
+            await tx.tenantProfile.update({
+              where: { id: tenancy.tenantProfileId },
+              data: { status: 'ACTIVE' },
+            });
+          }
+
+          // Rent configuration must be current or the nightly charge
+          // generation would skip this tenancy (spec §13, §49). The
+          // seed config created at signing has effectiveFrom =
+          // startDate, so once the start date has arrived it is already
+          // current — this is purely defensive for unusual states.
+          const hasCurrentConfig = await tx.rentConfiguration.findFirst({
+            where: {
+              tenancyId: tenancy.id,
+              effectiveFrom: { lte: new Date() },
+              OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }],
+            },
+          });
+          if (!hasCurrentConfig) {
+            await tx.rentConfiguration.create({
+              data: {
+                tenancyId: tenancy.id,
+                organizationId: tenancy.organizationId,
+                unitId: tenancy.unitId,
+                amount: tenancy.rentAmount,
+                billingFrequency: tenancy.billingFrequency,
+                paymentDueDay: tenancy.paymentDueDay,
+                effectiveFrom: tenancy.startDate,
+              },
+            });
+          }
+
+          // One-time security deposit (spec §23). A deposit is a single
+          // charge for the tenancy's whole life, so we only ever make
+          // sure it exists — never re-create or re-due it.
+          const deposit = await tx.securityDeposit.findUnique({
+            where: { tenancyId: tenancy.id },
+          });
+          if (!deposit) {
+            await tx.securityDeposit.create({
+              data: {
+                organizationId: tenancy.organizationId,
+                tenancyId: tenancy.id,
+                requiredAmount: tenancy.depositAmount,
+              },
+            });
+          }
+
+          return tenancy;
+        });
+
+        // Post-commit, best-effort — a slow/flaky provider must never
+        // hold the operation hostage.
+        if (tenancy.tenantProfile.userId) {
+          await this.notifications.dispatch({
+            recipientUserId: tenancy.tenantProfile.userId,
+            organizationId: tenancy.organizationId,
+            type: 'DEPOSIT_DUE',
+            title: 'Security deposit due',
+            body: `Your tenancy is now active. Please pay your one-time security deposit of ${Number(tenancy.depositAmount).toLocaleString()} KES.`,
+            data: { tenancyId: tenancy.id },
+            email: tenancy.tenantProfile.email,
+            phone: tenancy.tenantProfile.phone ?? undefined,
+          });
+        }
+
+        activated += 1;
+      } catch (err) {
+        errors += 1;
+        this.logger.error(
+          `Tenancy activation failed for ${tenancy.id}: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log(
+      `Tenancy activation run complete: ${activated} activated, ${skipped} skipped, ${errors} errors (of ${dueTenancies.length} due pending tenancies)`,
+    );
+    return { activated, skipped, errors };
   }
 
   // ── Direct creation (landlord re-letting to an existing tenant) ────

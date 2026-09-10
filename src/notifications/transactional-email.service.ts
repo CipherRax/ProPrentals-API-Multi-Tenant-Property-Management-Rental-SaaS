@@ -5,6 +5,7 @@ import {
   EmailProvider,
   SmsProvider,
 } from './providers/provider.interfaces';
+import { passwordReset, staffInvitation, tenantInvitation } from './email-templates';
 
 /**
  * Account-critical emails/SMS that must always attempt delivery
@@ -24,11 +25,16 @@ export class TransactionalEmailService {
     @Inject(SMS_PROVIDER) private readonly smsProvider: SmsProvider,
   ) {}
 
-  async sendPasswordReset(email: string, resetLink: string): Promise<void> {
+  async sendPasswordReset(email: string, recipientName: string, resetLink: string): Promise<void> {
     const result = await this.emailProvider.send(
       email,
       'Reset your ProPrentals password',
-      `We received a request to reset your password. Use the link below — it expires in 1 hour:\n\n${resetLink}\n\nIf you didn't request this, you can safely ignore this email.`,
+      passwordReset({
+        recipientName: recipientName || 'there',
+        organizationName: 'ProPrentals',
+        actionLabel: 'Reset password',
+        actionUrl: resetLink,
+      }),
     );
     if (!result.success) {
       this.logger.error(`Password reset email to ${email} failed: ${result.errorMessage}`);
@@ -45,7 +51,13 @@ export class TransactionalEmailService {
     const emailResult = await this.emailProvider.send(
       email,
       `You're invited to join ${organizationName} on ProPrentals`,
-      `Hi ${tenantName},\n\n${organizationName} has invited you to set up your tenant account. Use the link below to accept and activate your account:\n\n${invitationLink}\n\nThis link expires soon, so please use it promptly.`,
+      tenantInvitation({
+        recipientName: tenantName || 'there',
+        organizationName,
+        actionLabel: 'Open my account',
+        actionUrl: invitationLink,
+        expiresNote: 'This invitation link is temporary and will expire soon, so please use it promptly.',
+      }),
     );
     if (!emailResult.success) {
       this.logger.warn(`Invitation email to ${email} failed: ${emailResult.errorMessage}`);
@@ -59,6 +71,30 @@ export class TransactionalEmailService {
       if (!smsResult.success) {
         this.logger.warn(`Invitation SMS to ${phone} failed: ${smsResult.errorMessage}`);
       }
+    }
+  }
+
+  async sendStaffInvitation(
+    email: string,
+    fullName: string,
+    organizationName: string,
+    roleLabel: string,
+    invitationLink: string,
+  ): Promise<void> {
+    const emailResult = await this.emailProvider.send(
+      email,
+      `You're invited to join ${organizationName} on ProPrentals`,
+      staffInvitation({
+        recipientName: fullName || 'there',
+        organizationName,
+        roleLabel,
+        actionLabel: 'Accept invitation',
+        actionUrl: invitationLink,
+        expiresNote: 'This invitation link is temporary and will expire soon, so please use it promptly.',
+      }),
+    );
+    if (!emailResult.success) {
+      this.logger.warn(`Staff invitation email to ${email} failed: ${emailResult.errorMessage}`);
     }
   }
 }

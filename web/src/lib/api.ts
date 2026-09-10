@@ -191,6 +191,42 @@ class ApiClient {
     });
   }
 
+  /**
+   * Uploads one or more files as `multipart/form-data` under the field
+   * name `files` (matches the image-upload endpoints). Sends the access
+   * token but no JSON Content-Type so the browser sets the boundary.
+   */
+  async upload<T>(path: string, files: File[]): Promise<T> {
+    const token = this.accessToken;
+    const form = new FormData();
+    for (const file of files) form.append('files', file);
+
+    const res = await fetch(`${API_BASE}/api/v1${path}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+      credentials: 'include',
+    });
+
+    if (res.status === 401 && !path.includes('/auth/login')) {
+      const refreshed = await this.rotate();
+      if (refreshed) return this.upload<T>(path, files);
+    }
+
+    if (!res.ok) {
+      let body: any = null;
+      try {
+        body = await res.json();
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(body?.message ?? `Upload failed (${res.status})`, res.status, body?.path);
+    }
+
+    const json = (await res.json()) as Envelope<T>;
+    return json.data ?? (json as unknown as T);
+  }
+
   delete<T>(path: string) {
     return this.request<T>(path, { method: 'DELETE' });
   }
@@ -217,6 +253,19 @@ export const api = new ApiClient();
 export function toNumber(value: string | number | null | undefined): number {
   if (value == null) return 0;
   return typeof value === 'number' ? value : Number(value);
+}
+
+/**
+ * Resolve a stored image URL for use in <img src>. Uploaded images are
+ * stored server-relative ("/uploads/...") and are served by the API origin,
+ * not the web app origin — so make them absolute against the API base.
+ * Absolute/external URLs (e.g. seeded CDN links) pass through untouched.
+ */
+export function resolveAssetUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (/^[a-z]+:\/\//i.test(url)) return url;
+  if (url.startsWith('/uploads/')) return `${API_BASE}${url}`;
+  return url;
 }
 
 export function formatMoney(value: string | number | null | undefined, currency = 'KES'): string {

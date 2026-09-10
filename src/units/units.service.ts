@@ -10,6 +10,7 @@ import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { AuditService } from '../common/utils/audit.service';
+import { StorageService } from '../storage/storage.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
 import { QueryUnitsDto } from './dto/query-units.dto';
@@ -25,6 +26,7 @@ export class UnitsService {
     private readonly organizations: OrganizationsService,
     private readonly subscriptions: SubscriptionsService,
     private readonly audit: AuditService,
+    private readonly storage: StorageService,
   ) {}
 
   private assertCanManage(role: OrgRole) {
@@ -160,8 +162,14 @@ export class UnitsService {
 
     // OCCUPIED is derived from Tenancy state from Phase 3 onward — block
     // manual overrides into/out of OCCUPIED once tenancies exist so the
-    // two sources of truth can't drift apart (spec §9).
-    if (dto.availabilityStatus === 'OCCUPIED' || before.availabilityStatus === 'OCCUPIED') {
+    // two sources of truth can't drift apart (spec §9). Only applies when
+    // the caller is actually changing availabilityStatus — other unit
+    // fields (e.g. isPubliclyListable) must remain updatable on occupied
+    // units without tripping this guard.
+    if (
+      dto.availabilityStatus !== undefined &&
+      (dto.availabilityStatus === 'OCCUPIED' || before.availabilityStatus === 'OCCUPIED')
+    ) {
       throw new BadRequestException(
         'OCCUPIED status is derived from active tenancy records and cannot be set manually. Use the tenancy endpoints (Phase 3) instead.',
       );
@@ -233,6 +241,37 @@ export class UnitsService {
     });
   }
 
+  async uploadImages(
+    userId: string,
+    organizationId: string,
+    propertyId: string,
+    unitId: string,
+    files: Express.Multer.File[],
+  ) {
+    const membership = await this.organizations.assertMembership(userId, organizationId);
+    this.assertCanManage(membership.role);
+    await this.getOwnedUnit(organizationId, propertyId, unitId);
+
+    if (!files?.length) throw new NotFoundException('No images provided');
+
+    const last = await this.prisma.unitImage.findFirst({
+      where: { unitId },
+      orderBy: { sortOrder: 'desc' },
+    });
+    let sortOrder = last ? last.sortOrder + 1 : 0;
+
+    const images = [];
+    for (const file of files) {
+      const { url } = await this.storage.saveFile(file, 'units');
+      images.push(
+        await this.prisma.unitImage.create({
+          data: { unitId, url, sortOrder: sortOrder++ },
+        }),
+      );
+    }
+    return images;
+  }
+
   async removeImage(
     userId: string,
     organizationId: string,
@@ -249,6 +288,7 @@ export class UnitsService {
       throw new NotFoundException('Image not found on this unit');
     }
     await this.prisma.unitImage.delete({ where: { id: imageId } });
+    await this.storage.deleteByUrl(image.url);
     return { message: 'Image removed' };
   }
 }

@@ -311,6 +311,7 @@ export class AuthService {
     // generic response above).
     await this.transactionalEmail.sendPasswordReset(
       user.email,
+      user.firstName || user.lastName || 'there',
       `${frontendUrl}/reset-password?token=${rawToken}`,
     );
 

@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Building2, Search } from 'lucide-react';
+import { Plus, Building2, Search, ImagePlus, X } from 'lucide-react';
 import { useAuth, getErrorMessage } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Pagination } from '@/components/ui/Pagination';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/lib/toast';
+import { can } from '@/lib/rbac';
 import type { Property, PaginationMeta } from '@/types';
 
 const propertyTypes = [
@@ -29,6 +30,7 @@ export default function PropertiesPage() {
   const router = useRouter();
   const { activeOrg } = useAuth();
   const { error, success } = useToast();
+  const canCreate = can(activeOrg?.myRole, 'property:create');
   const [items, setItems] = useState<Property[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>();
   const [loading, setLoading] = useState(true);
@@ -47,6 +49,8 @@ export default function PropertiesPage() {
     contactEmail: '',
     isPubliclyListable: false,
   });
+  const [pickerFiles, setPickerFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(
     async (page = 1) => {
@@ -76,13 +80,31 @@ export default function PropertiesPage() {
   const update = (field: string, value: string | boolean) =>
     setForm((f) => ({ ...f, [field]: value }));
 
+  const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).filter((f) =>
+      f.type.startsWith('image/'),
+    );
+    setPickerFiles((prev) => [...prev, ...files].slice(0, 10));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const create = async () => {
     if (!activeOrg) return;
     setSaving(true);
     try {
-      await api.post<Property>(`/organizations/${activeOrg.id}/properties`, form);
+      const property = await api.post<Property>(
+        `/organizations/${activeOrg.id}/properties`,
+        form,
+      );
+      if (pickerFiles.length) {
+        await api.upload<{ id: string; url: string }[]>(
+          `/organizations/${activeOrg.id}/properties/${property.id}/images/upload`,
+          pickerFiles,
+        );
+      }
       success('Property created');
       setCreateOpen(false);
+      setPickerFiles([]);
       setForm({
         name: '',
         propertyType: 'APARTMENT_COMPLEX',
@@ -111,9 +133,11 @@ export default function PropertiesPage() {
         title="Properties"
         description="Your portfolio of buildings, houses, and units"
         actions={
-          <button className="btn-primary" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> New property
-          </button>
+          canCreate ? (
+            <button className="btn-primary" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" /> New property
+            </button>
+          ) : undefined
         }
       />
 
@@ -134,11 +158,17 @@ export default function PropertiesPage() {
         <EmptyState
           icon={<Building2 className="h-8 w-8" />}
           title="No properties yet"
-          description="Add your first property to start managing units and tenants."
+          description={
+            canCreate
+              ? 'Add your first property to start managing units and tenants.'
+              : 'Your organization has no properties yet.'
+          }
           action={
-            <button className="btn-primary" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4" /> Add property
-            </button>
+            canCreate ? (
+              <button className="btn-primary" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4" /> Add property
+              </button>
+            ) : undefined
           }
         />
       ) : (
@@ -280,6 +310,48 @@ export default function PropertiesPage() {
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Property photos</label>
+            {pickerFiles.length > 0 && (
+              <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {pickerFiles.map((file, i) => (
+                  <div key={`${file.name}-${i}`} className="relative aspect-video overflow-hidden rounded-lg border border-paper-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPickerFiles((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+              multiple
+              hidden
+              onChange={onPickFiles}
+            />
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-paper-300 py-6 text-sm text-paper-500 hover:border-brand-500 hover:text-brand-700"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImagePlus className="h-5 w-5" />
+              Add images ({pickerFiles.length}/10) — add 2 or more so they show in the marketplace
+            </button>
           </div>
           <label className="flex items-center gap-2 text-sm text-paper-600 sm:col-span-2">
             <input

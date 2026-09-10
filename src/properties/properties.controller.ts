@@ -7,8 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
@@ -17,6 +21,7 @@ import { QueryPropertiesDto } from './dto/query-properties.dto';
 import { AddPropertyImageDto } from './dto/add-property-image.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { OrgRoles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('properties')
 @ApiBearerAuth()
@@ -26,6 +31,7 @@ export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
 
   @Post()
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   create(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,
@@ -53,6 +59,7 @@ export class PropertiesController {
   }
 
   @Patch(':propertyId')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   update(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,
@@ -63,6 +70,7 @@ export class PropertiesController {
   }
 
   @Delete(':propertyId')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   remove(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,
@@ -72,6 +80,7 @@ export class PropertiesController {
   }
 
   @Post(':propertyId/images')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   addImage(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,
@@ -81,7 +90,20 @@ export class PropertiesController {
     return this.propertiesService.addImage(userId, organizationId, propertyId, dto);
   }
 
+  @Post(':propertyId/images/upload')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
+  @UseInterceptors(FilesInterceptor('files', 10, { storage: memoryStorage() }))
+  uploadImages(
+    @CurrentUser('userId') userId: string,
+    @Param('organizationId') organizationId: string,
+    @Param('propertyId') propertyId: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.propertiesService.uploadImages(userId, organizationId, propertyId, files);
+  }
+
   @Delete(':propertyId/images/:imageId')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER')
   removeImage(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,

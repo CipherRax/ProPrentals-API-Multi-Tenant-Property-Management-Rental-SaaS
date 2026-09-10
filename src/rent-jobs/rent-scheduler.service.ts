@@ -16,6 +16,23 @@ export class RentSchedulerService {
 
   constructor(@InjectQueue(RENT_QUEUE) private readonly rentQueue: Queue) {}
 
+  // Runs before the 1AM charge job so that a tenancy whose start date
+  // arrives today is ACTIVE in time for the same night's rent generation.
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'Africa/Nairobi' })
+  async scheduleActivateTenancies() {
+    const today = new Date().toISOString().slice(0, 10);
+    await this.rentQueue.add(
+      RENT_JOB_NAMES.ACTIVATE_TENANCIES,
+      {},
+      {
+        jobId: `${RENT_JOB_NAMES.ACTIVATE_TENANCIES}-${today}`,
+        removeOnComplete: true,
+        removeOnFail: 50,
+      },
+    );
+    this.logger.log('Enqueued daily tenancy activation job');
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_1AM, { timeZone: 'Africa/Nairobi' })
   async scheduleGenerateCharges() {
     const today = new Date().toISOString().slice(0, 10);

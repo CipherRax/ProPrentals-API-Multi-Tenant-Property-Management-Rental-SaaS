@@ -4,8 +4,15 @@ export interface SendResult {
   errorMessage?: string;
 }
 
+export interface EmailSendPayload {
+  /** Plain-text fallback for clients that don't render HTML. */
+  text: string;
+  /** Optional rich HTML body (styled, but no external assets). */
+  html?: string;
+}
+
 export interface EmailProvider {
-  send(to: string, subject: string, body: string): Promise<SendResult>;
+  send(to: string, subject: string, payload: EmailSendPayload): Promise<SendResult>;
 }
 
 export interface SmsProvider {

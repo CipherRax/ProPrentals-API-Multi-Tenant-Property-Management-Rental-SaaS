@@ -93,7 +93,7 @@ export class TenantInvitationsService {
     });
 
     const frontendUrl = this.config.get<string>('frontendUrl');
-    const invitationLink = `${frontendUrl}/tenant-invitations/${rawToken}`;
+    const invitationLink = `${frontendUrl}/invite/${rawToken}`;
 
     const organization = await this.prisma.organization.findUnique({
       where: { id: organizationId },

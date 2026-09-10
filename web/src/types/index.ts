@@ -377,21 +377,59 @@ export interface NotificationPreference {
 
 export interface Conversation {
   id: string;
-  tenantProfileId: string;
-  tenant?: { id: string; fullName: string; email: string };
+  organizationId: string;
+  tenantUserId: string;
+  tenantProfileId?: string | null;
+  tenant: {
+    id: string | null;
+    fullName: string;
+    email: string;
+    avatarUrl?: string | null;
+  };
   lastMessage?: string | null;
   unreadCount: number;
   updatedAt: string;
 }
 
+export interface MessageSender {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string | null;
+}
+
 export interface Message {
   id: string;
+  conversationId: string;
+  senderUserId: string;
   body: string;
-  senderUserId?: string | null;
-  senderRole?: string | null;
-  read: boolean;
   attachmentUrl?: string | null;
   createdAt: string;
+  sender?: MessageSender | null;
+}
+
+export interface PeerConversation {
+  id: string;
+  organizationId: string;
+  peer: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+  };
+  lastMessage?: string | null;
+  unreadCount: number;
+  updatedAt: string;
+}
+
+export interface PeerMessage {
+  id: string;
+  peerConversationId: string;
+  senderUserId: string;
+  body: string;
+  attachmentUrl?: string | null;
+  createdAt: string;
+  sender?: MessageSender | null;
 }
 
 export interface Announcement {
@@ -432,13 +470,14 @@ export interface Listing {
   sizeSqm?: number | null;
   description?: string | null;
   amenities: string[];
-  images?: { url: string }[];
+  images?: { id?: string; url: string }[];
   property?: {
     id: string;
     name: string;
     city?: string | null;
     county?: string | null;
     neighborhood?: string | null;
+    images?: { id?: string; url: string }[];
   };
 }
 

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { AuditService } from '../common/utils/audit.service';
+import { StorageService } from '../storage/storage.service';
 import { QueryTenantsDto } from './dto/query-tenants.dto';
 import { UpdateMyTenantProfileDto } from './dto/update-my-tenant-profile.dto';
 import { buildPaginatedResult, paginationSkip } from '../common/utils/paginate';
@@ -13,6 +14,7 @@ export class TenantsService {
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
     private readonly audit: AuditService,
+    private readonly storage: StorageService,
   ) {}
 
   // ── Landlord-facing: tenant directory for an organization ──────────
@@ -126,6 +128,33 @@ export class TenantsService {
       where: { id: tenantProfileId },
       data: dto,
     });
+  }
+
+  async uploadMyProfileAvatar(userId: string, tenantProfileId: string, file: Express.Multer.File) {
+    const profile = await this.prisma.tenantProfile.findFirst({
+      where: { id: tenantProfileId, userId, deletedAt: null },
+    });
+    if (!profile) throw new NotFoundException('Tenant profile not found');
+
+    const stored = await this.storage.saveFile(file, 'avatars');
+
+    // Keep the tenant-facing avatar in sync on the user account too, so chat
+    // sender bubbles and the sidebar show the same picture everywhere.
+    const updated = await this.prisma.$transaction([
+      this.prisma.tenantProfile.update({
+        where: { id: tenantProfileId },
+        data: { profileImageUrl: stored.url },
+      }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { avatarUrl: stored.url },
+      }),
+    ]);
+
+    if (profile.profileImageUrl && profile.profileImageUrl !== stored.url) {
+      await this.storage.deleteByUrl(profile.profileImageUrl);
+    }
+    return updated[0];
   }
 
   // Guarantees the tenant profile both exists AND belongs to the

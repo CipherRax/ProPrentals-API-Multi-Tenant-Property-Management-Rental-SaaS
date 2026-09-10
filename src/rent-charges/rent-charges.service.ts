@@ -355,10 +355,49 @@ export class RentChargesService {
   // ── Tenant-facing self-service ──────────────────────────────────────
 
   async getMyCharges(userId: string) {
+    await this.ensureCurrentCharges(userId);
+
     return this.prisma.rentCharge.findMany({
       where: { tenancy: { tenantProfile: { userId } } },
       orderBy: { dueDate: 'desc' },
       include: { unit: { select: { id: true, unitNumber: true, propertyId: true } } },
     });
+  }
+
+  /**
+   * Self-healing for newly approved tenancies: if an ACTIVE tenancy has a
+   * current rent configuration but hasn't been charged yet for a period
+   * that has already started, generate that charge on the fly instead of
+   * leaving the tenant staring at zeros until the nightly generation run.
+   * Idempotent — duplicate attempts are no-ops (unique constraint + P2002).
+   */
+  private async ensureCurrentCharges(userId: string) {
+    const tenancies = await this.prisma.tenancy.findMany({
+      where: { status: 'ACTIVE', tenantProfile: { userId } },
+      select: { id: true, startDate: true, unitId: true, organizationId: true },
+    });
+
+    for (const tenancy of tenancies) {
+      const hasCharges = await this.prisma.rentCharge.count({
+        where: { tenancyId: tenancy.id },
+      });
+      if (hasCharges > 0) continue;
+
+      const config = await this.prisma.rentConfiguration.findFirst({
+        where: {
+          tenancyId: tenancy.id,
+          effectiveFrom: { lte: new Date() },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }],
+        },
+        orderBy: { effectiveFrom: 'desc' },
+      });
+      if (!config) continue;
+
+      await this.generateNextChargeForTenancy(tenancy).catch((err) =>
+        this.logger.error(
+          `On-read rent charge generation failed for tenancy ${tenancy.id}: ${(err as Error).message}`,
+        ),
+      );
+    }
   }
 }

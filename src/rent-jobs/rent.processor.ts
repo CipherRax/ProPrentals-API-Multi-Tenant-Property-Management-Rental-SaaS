@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { RentChargesService } from '../rent-charges/rent-charges.service';
+import { TenanciesService } from '../tenancies/tenancies.service';
 import { RENT_JOB_NAMES, RENT_QUEUE } from './rent-jobs.constants';
 
 // The actual worker. Runs in the same process as the API by default
@@ -12,7 +13,10 @@ import { RENT_JOB_NAMES, RENT_QUEUE } from './rent-jobs.constants';
 export class RentProcessor extends WorkerHost {
   private readonly logger = new Logger(RentProcessor.name);
 
-  constructor(private readonly rentChargesService: RentChargesService) {
+  constructor(
+    private readonly rentChargesService: RentChargesService,
+    private readonly tenanciesService: TenanciesService,
+  ) {
     super();
   }
 
@@ -20,6 +24,8 @@ export class RentProcessor extends WorkerHost {
     this.logger.log(`Processing job ${job.name} (${job.id})`);
 
     switch (job.name) {
+      case RENT_JOB_NAMES.ACTIVATE_TENANCIES:
+        return this.tenanciesService.activateDueTenancies();
       case RENT_JOB_NAMES.GENERATE_CHARGES:
         return this.rentChargesService.generateChargesForAllActiveTenancies();
       case RENT_JOB_NAMES.DETECT_OVERDUE:

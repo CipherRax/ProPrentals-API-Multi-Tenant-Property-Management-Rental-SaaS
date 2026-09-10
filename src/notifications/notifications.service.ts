@@ -75,7 +75,7 @@ export class NotificationsService {
 
       if (params.email) {
         await this.attemptChannel(notification.id, 'EMAIL', emailEnabled, () =>
-          this.emailProvider.send(params.email!, params.title, params.body),
+          this.emailProvider.send(params.email!, params.title, { text: params.body }),
         );
       }
 
@@ -138,7 +138,22 @@ export class NotificationsService {
       }),
       this.prisma.notification.count({ where }),
     ]);
-    return buildPaginatedResult(data, total, page, limit);
+
+    return buildPaginatedResult(
+      data.map((n) => ({
+        id: n.id,
+        type: n.type,
+        category:
+          NOTIFICATION_CATEGORY_MAP[n.type] ?? (n.type as unknown as NotificationCategory),
+        title: n.title,
+        message: n.body,
+        read: n.readAt !== null,
+        createdAt: n.createdAt,
+      })),
+      total,
+      page,
+      limit,
+    );
   }
 
   async getUnreadCount(userId: string) {

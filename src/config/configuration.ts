@@ -48,6 +48,7 @@ export default () => ({
 
   storage: {
     provider: process.env.STORAGE_PROVIDER || 'local',
+    localDir: process.env.STORAGE_LOCAL_DIR || 'uploads',
     bucket: process.env.STORAGE_BUCKET,
     accessKey: process.env.STORAGE_ACCESS_KEY,
     secretKey: process.env.STORAGE_SECRET_KEY,

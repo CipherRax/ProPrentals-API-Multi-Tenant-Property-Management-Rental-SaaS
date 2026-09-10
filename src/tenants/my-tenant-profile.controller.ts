@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
 import { UpdateMyTenantProfileDto } from './dto/update-my-tenant-profile.dto';
@@ -27,5 +39,15 @@ export class MyTenantProfileController {
     @Body() dto: UpdateMyTenantProfileDto,
   ) {
     return this.tenantsService.updateMyProfile(userId, tenantProfileId, dto);
+  }
+
+  @Post('profiles/:tenantProfileId/avatar')
+  @UseInterceptors(FileInterceptor('files', { storage: memoryStorage() }))
+  uploadMyAvatar(
+    @CurrentUser('userId') userId: string,
+    @Param('tenantProfileId') tenantProfileId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.tenantsService.uploadMyProfileAvatar(userId, tenantProfileId, file);
   }
 }

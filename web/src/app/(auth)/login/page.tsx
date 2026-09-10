@@ -20,8 +20,8 @@ export default function LoginPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await login(email, password);
-      router.push('/dashboard');
+      const home = await login(email, password);
+      router.replace(home);
     } catch (err) {
       error(getErrorMessage(err));
     } finally {
