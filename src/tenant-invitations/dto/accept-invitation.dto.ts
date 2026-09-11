@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class AcceptInvitationDto {
   @ApiPropertyOptional({
@@ -9,6 +9,7 @@ export class AcceptInvitationDto {
   @IsOptional()
   @IsString()
   @MinLength(8)
+  @MaxLength(128)
   @Matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
     message: 'Password must include upper, lower, and a number',
   })

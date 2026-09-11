@@ -16,6 +16,18 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024; // 5MB — matches StorageService
+
+const uploadOptions = {
+  storage: memoryStorage(),
+  limits: {
+    fileSize: MAX_UPLOAD_SIZE,
+    files: 1,
+    fields: 4,
+    parts: 10,
+  },
+};
+
 @ApiTags('users')
 @ApiBearerAuth()
 @UseGuards(JwtAccessGuard)
@@ -34,7 +46,7 @@ export class UsersController {
   }
 
   @Post('me/avatar')
-  @UseInterceptors(FileInterceptor('files', { storage: memoryStorage() }))
+  @UseInterceptors(FileInterceptor('files', uploadOptions))
   uploadAvatar(@CurrentUser('userId') userId: string, @UploadedFile() file: Express.Multer.File) {
     return this.usersService.uploadAvatar(userId, file);
   }

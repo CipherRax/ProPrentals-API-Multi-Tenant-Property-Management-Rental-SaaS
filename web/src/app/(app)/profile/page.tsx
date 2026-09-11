@@ -416,7 +416,7 @@ function UnitAdminRow({
   return (
     <div className="flex items-center gap-2">
       <span className="shrink-0 text-[10px] uppercase tracking-wide text-paper-400">
-        {unit.unitType.replaceAll('_', ' ')}
+        {(unit.unitTypeDefinition?.typeName ?? 'Unit').replaceAll('_', ' ')}
       </span>
       <input
         className="input flex-1 border-transparent px-2 py-1.5 shadow-none focus:border-brand-300"

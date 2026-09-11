@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UnitType } from '@prisma/client';
+import { UnitTypeDefinition } from '@prisma/client';
 import {
   IsArray,
   IsEnum,
@@ -21,9 +21,10 @@ export class CreateUnitDto {
   @IsString()
   unitNumber: string;
 
-  @ApiProperty({ enum: UnitType })
-  @IsEnum(UnitType)
-  unitType: UnitType;
+  @ApiPropertyOptional({ description: 'Unit type name (e.g. Bedsitter, 1BR, 2BR). If omitted, a new type is created.' })
+  @IsOptional()
+  @IsString()
+  unitTypeName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

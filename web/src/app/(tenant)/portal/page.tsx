@@ -161,7 +161,7 @@ export default function TenantHomePage() {
                     {t.unit.unitNumber}
                     {t.unit.floor ? ` · Floor ${t.unit.floor}` : ''}
                     <span className="ml-1.5 text-xs font-normal text-paper-400">
-                      {titleCase(t.unit.unitType)}
+                      {titleCase(t.unit.unitTypeDefinition?.typeName ?? 'Unit')}
                     </span>
                   </dd>
                 </div>

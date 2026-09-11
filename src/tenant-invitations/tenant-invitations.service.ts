@@ -15,12 +15,14 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { AuditService } from '../common/utils/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { TenanciesService } from '../tenancies/tenancies.service';
+import { UnitTypesService, CountSnapshot } from '../unit-types/unit-types.service';
 import { TransactionalEmailService } from '../notifications/transactional-email.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { QueryInvitationsDto } from './dto/query-invitations.dto';
 import { generateSecureToken, hashSecureToken } from '../common/utils/secure-token.util';
 import { buildPaginatedResult, paginationSkip } from '../common/utils/paginate';
+import { assertPasswordMeetsPolicy } from '../common/utils/password-policy.util';
 
 const MANAGE_ROLES: OrgRole[] = ['OWNER', 'PROPERTY_MANAGER'];
 const DEFAULT_EXPIRY_DAYS = 7;
@@ -34,6 +36,7 @@ export class TenantInvitationsService {
     private readonly audit: AuditService,
     private readonly authService: AuthService,
     private readonly tenanciesService: TenanciesService,
+    private readonly unitTypes: UnitTypesService,
     private readonly config: ConfigService,
     private readonly transactionalEmail: TransactionalEmailService,
   ) {}
@@ -191,7 +194,12 @@ export class TenantInvitationsService {
       }),
       this.prisma.unit.findUnique({
         where: { id: invitation.unitId },
-        select: { unitNumber: true, unitType: true, bedrooms: true, bathrooms: true },
+        select: {
+          unitNumber: true,
+          bedrooms: true,
+          bathrooms: true,
+          unitTypeDefinition: { select: { typeName: true } },
+        },
       }),
       this.prisma.organization.findUnique({
         where: { id: invitation.organizationId },
@@ -202,7 +210,14 @@ export class TenantInvitationsService {
     return {
       organizationName: organization?.name,
       property,
-      unit,
+      unit: unit
+        ? {
+            unitNumber: unit.unitNumber,
+            unitType: unit.unitTypeDefinition?.typeName ?? null,
+            bedrooms: unit.bedrooms,
+            bathrooms: unit.bathrooms,
+          }
+        : null,
       tenantFullName: invitation.tenantFullName,
       proposedRentAmount: invitation.proposedRentAmount,
       proposedDepositAmount: invitation.proposedDepositAmount,
@@ -235,6 +250,7 @@ export class TenantInvitationsService {
     // user — since in this phase the raw token is returned directly to
     // the inviter rather than delivered out-of-band by the platform.
     if (existingUser) {
+      const vacancyOut: { vacancy: CountSnapshot | null } = { vacancy: null };
       const result = await this.prisma.$transaction(async (tx) => {
         const claimed = await tx.tenantInvitation.updateMany({
           where: { id: invitation.id, status: 'PENDING' },
@@ -274,10 +290,19 @@ export class TenantInvitationsService {
             paymentDueDay: invitation.paymentDueDay,
             billingFrequency: invitation.billingFrequency,
           },
+          vacancyOut,
         );
 
         return { tenantProfile, tenancy };
       });
+
+      if (vacancyOut.vacancy) {
+        await this.unitTypes.maybeAlertLowVacancy(
+          vacancyOut.vacancy.unitTypeId,
+          vacancyOut.vacancy.before,
+          vacancyOut.vacancy.after,
+        );
+      }
 
       await this.audit.log({
         organizationId: invitation.organizationId,
@@ -301,10 +326,12 @@ export class TenantInvitationsService {
     if (!dto.password) {
       throw new BadRequestException('A password is required to activate a new account');
     }
+    assertPasswordMeetsPolicy(dto.password);
     const passwordHash = await argon2.hash(dto.password);
     const [firstName, ...rest] = invitation.tenantFullName.trim().split(' ');
     const lastName = rest.join(' ') || firstName;
 
+    const vacancyOut: { vacancy: CountSnapshot | null } = { vacancy: null };
     const result = await this.prisma.$transaction(async (tx) => {
       const claimed = await tx.tenantInvitation.updateMany({
         where: { id: invitation.id, status: 'PENDING' },
@@ -349,10 +376,19 @@ export class TenantInvitationsService {
           paymentDueDay: invitation.paymentDueDay,
           billingFrequency: invitation.billingFrequency,
         },
+        vacancyOut,
       );
 
       return { user, tenantProfile, tenancy };
     });
+
+    if (vacancyOut.vacancy) {
+      await this.unitTypes.maybeAlertLowVacancy(
+        vacancyOut.vacancy.unitTypeId,
+        vacancyOut.vacancy.before,
+        vacancyOut.vacancy.after,
+      );
+    }
 
     await this.audit.log({
       organizationId: invitation.organizationId,

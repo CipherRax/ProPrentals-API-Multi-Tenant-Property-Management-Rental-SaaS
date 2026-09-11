@@ -19,6 +19,7 @@ import { AcceptStaffInvitationDto } from './dto/accept-staff-invitation.dto';
 import { ListStaffDto } from './dto/list-staff.dto';
 import { generateSecureToken, hashSecureToken } from '../common/utils/secure-token.util';
 import { buildPaginatedResult, paginationSkip } from '../common/utils/paginate';
+import { assertPasswordMeetsPolicy } from '../common/utils/password-policy.util';
 
 const MANAGE_ROLES: OrgRole[] = ['OWNER', 'PROPERTY_MANAGER'];
 const DEFAULT_EXPIRY_DAYS = 7;
@@ -306,6 +307,7 @@ export class StaffService {
       where: { email: invitation.email },
     });
 
+    assertPasswordMeetsPolicy(dto.password);
     const passwordHash = await argon2.hash(dto.password);
 
     const result = await this.prisma.$transaction(async (tx) => {

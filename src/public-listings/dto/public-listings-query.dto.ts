@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class PublicListingsQueryDto {
   @IsOptional()
@@ -53,6 +53,11 @@ export class PublicListingsQueryDto {
   @IsOptional()
   @IsArray()
   amenities?: string[];
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  includeUnavailable?: boolean;
 
   @IsOptional()
   @IsIn(['asc', 'desc'])

@@ -211,13 +211,14 @@ model Property {
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
   buildings          Building[]
+  unitTypeDefinitions UnitTypeDefinition[]
   inquiries          PropertyInquiry[]
   maintenanceRequests MaintenanceRequest[]
+  announcements      Announcement[]
   organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   images             PropertyImage[]
   tenantInvitations  TenantInvitation[]
   units              Unit[]
-  announcements      Announcement[]
 
   @@index([organizationId, status])
   @@index([county, city])
@@ -250,10 +251,51 @@ model Building {
   deletedAt      DateTime?
   property       Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   units          Unit[]
+  unitTypeDefinitions UnitTypeDefinition[]
   announcements  Announcement[]
 
   @@index([propertyId])
   @@map("buildings")
+}
+
+model UnitTypeDefinition {
+  id                  String                @id @default(uuid())
+  propertyId          String
+  buildingId          String?
+  typeName            String
+  baseRent            Decimal               @db.Decimal(12, 2)
+  depositAmount       Decimal               @db.Decimal(12, 2)
+  description         String?
+  amenities           String[]              @default([])
+  // Representative specs for marketplace filtering/searching. Physical
+  // units may override per-unit (Unit.bedrooms/bathrooms/sizeSqm), but
+  // the type-level values are what the marketplace uses.
+  bedrooms            Int?
+  bathrooms           Int?
+  sizeSqm             Decimal?              @db.Decimal(10, 2)
+  // AUTO = totalCount/vacantCount are derived from physical Unit records
+  // + tenancy state (the recommended, single-source-of-truth mode).
+  // MANUAL = counts are landlord-declared via the +/- stepper (for
+  // landlords tracking stock informally without full lease records).
+  trackingMode        UnitTypeTrackingMode   @default(AUTO)
+  totalCount          Int                   @default(0)
+  vacantCount         Int                   @default(0)
+  representativeImage String?               // URL to a representative photo for this unit type
+  isPubliclyListable  Boolean               @default(false)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  deletedAt           DateTime?
+
+  property            Property              @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  building            Building?             @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  units               Unit[]                @relation(name: "unitTypeDefinitionUnits")
+  inquiries           PropertyInquiry[]
+
+  @@unique([propertyId, typeName])
+  @@index([propertyId, vacantCount])
+  @@index([propertyId, isPubliclyListable, vacantCount])
+  @@index([isPubliclyListable, vacantCount])
+  @@map("unit_type_definitions")
 }
 
 model Unit {
@@ -261,7 +303,6 @@ model Unit {
   propertyId         String
   buildingId         String?
   unitNumber         String
-  unitType           UnitType               @default(OTHER)
   floor              String?
   bedrooms           Int?
   bathrooms          Int?
@@ -272,6 +313,7 @@ model Unit {
   amenities          String[]               @default([])
   availabilityStatus UnitAvailabilityStatus @default(VACANT)
   isPubliclyListable Boolean                @default(false)
+  listIndividually   Boolean                @default(false) // escape hatch: surface this physical unit as its own marketplace card alongside its unit type
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
   deletedAt          DateTime?
@@ -283,6 +325,8 @@ model Unit {
   inquiries          PropertyInquiry[]
   building           Building?              @relation(fields: [buildingId], references: [id])
   property           Property               @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unitTypeId         String?                // nullable, references UnitTypeDefinition
+  unitTypeDefinition UnitTypeDefinition?   @relation(name: "unitTypeDefinitionUnits", fields: [unitTypeId], references: [id])
 
   @@unique([propertyId, unitNumber])
   @@index([propertyId, availabilityStatus])
@@ -385,25 +429,42 @@ model MaintenanceAttachment {
 }
 
 model PropertyInquiry {
-  id             String         @id @default(uuid())
-  organizationId String
-  propertyId     String?
-  unitId         String?
-  name           String
-  email          String
-  phone          String?
-  message        String
-  status         InquiryStatus  @default(NEW)
-  respondedAt    DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  property       Property?      @relation(fields: [propertyId], references: [id])
-  unit           Unit?          @relation(fields: [unitId], references: [id])
+  id                   String               @id @default(uuid())
+  organizationId       String
+  propertyId           String?
+  unitId               String?
+  // Stock-model support: an inquiry can target a whole unit type instead
+  // of one physical unit. vacantAtInquiry snapshots the type's public
+  // vacancy at the moment the visitor enquired so the landlord can see
+  // how many matching units were free when deciding to follow up.
+  unitTypeId           String?
+  vacantAtInquiry      Int?
+  // Soft-hold (spec priority): when the landlord marks an inquiry
+  // CONVERTED, one unit of the type is held for 30 minutes so the
+  // composed slot can't be double-booked. reservationExpiresAt past +
+  // holdReleasedAt null = an expired hold the reconciler/lazy release
+  // still needs to give back.
+  reservedAt           DateTime?
+  reservationExpiresAt DateTime?
+  holdReleasedAt       DateTime?
+  name                 String
+  email                String
+  phone                String?
+  message              String
+  status               InquiryStatus         @default(NEW)
+  respondedAt          DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  property             Property?             @relation(fields: [propertyId], references: [id])
+  unit                 Unit?                 @relation(fields: [unitId], references: [id])
+  unitType             UnitTypeDefinition?   @relation(fields: [unitTypeId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
   @@index([propertyId])
+  @@index([unitTypeId])
+  @@index([unitTypeId, reservationExpiresAt])
   @@map("property_inquiries")
 }
 
@@ -973,6 +1034,11 @@ enum UnitAvailabilityStatus {
   UNAVAILABLE
 }
 
+enum UnitTypeTrackingMode {
+  AUTO // counts derived from physical units + tenancy state (recommended)
+  MANUAL // counts landlord-declared via the +/- stepper
+}
+
 enum TenantProfileStatus {
   INVITED
   ACTIVE
@@ -1074,6 +1140,8 @@ enum NotificationType {
   SUBSCRIPTION_EXPIRING
   SUBSCRIPTION_PAYMENT_CONFIRMED
   SUBSCRIPTION_PAYMENT_FAILED
+  UNIT_TYPE_LOW_VACANCY
+  UNIT_TYPE_FULLY_BOOKED
 }
 
 enum NotificationCategory {
@@ -1083,6 +1151,7 @@ enum NotificationCategory {
   ANNOUNCEMENTS
   MAINTENANCE_UPDATES
   LEASE_REMINDERS
+  VACANCY_ALERTS
 }
 
 enum NotificationChannel {

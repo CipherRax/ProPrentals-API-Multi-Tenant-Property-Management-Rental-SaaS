@@ -17,6 +17,18 @@ import { UpdateMyTenantProfileDto } from './dto/update-my-tenant-profile.dto';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024; // 5MB — matches StorageService
+
+const uploadOptions = {
+  storage: memoryStorage(),
+  limits: {
+    fileSize: MAX_UPLOAD_SIZE,
+    files: 1,
+    fields: 4,
+    parts: 10,
+  },
+};
+
 // Tenant self-service — deliberately NOT nested under /organizations/:id
 // because a tenant is not an OrganizationMember and shouldn't need to
 // know or pass an organizationId to see their own data.
@@ -42,7 +54,7 @@ export class MyTenantProfileController {
   }
 
   @Post('profiles/:tenantProfileId/avatar')
-  @UseInterceptors(FileInterceptor('files', { storage: memoryStorage() }))
+  @UseInterceptors(FileInterceptor('files', uploadOptions))
   uploadMyAvatar(
     @CurrentUser('userId') userId: string,
     @Param('tenantProfileId') tenantProfileId: string,

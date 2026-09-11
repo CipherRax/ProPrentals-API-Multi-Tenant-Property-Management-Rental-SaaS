@@ -13,6 +13,7 @@ describe('Tenant invitation flow (e2e)', () => {
   let organizationId: string;
   let propertyId: string;
   let unitId: string;
+  let unitTypeId: string;
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -48,11 +49,12 @@ describe('Tenant invitation flow (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
         unitNumber: 'A-1',
-        unitType: 'ONE_BEDROOM',
+        unitTypeName: 'ONE_BEDROOM',
         baseRent: 15000,
         depositAmount: 15000,
       });
     unitId = unit.body.data.id;
+    unitTypeId = unit.body.data.unitTypeId;
   });
 
   afterAll(async () => {
@@ -103,6 +105,11 @@ describe('Tenant invitation flow (e2e)', () => {
       .get(`/api/v1/organizations/${organizationId}/properties/${propertyId}/units/${unitId}`)
       .set('Authorization', `Bearer ${ownerToken}`);
     expect(unitAfter.body.data.availabilityStatus).toBe('OCCUPIED');
+    // The unit type's AUTO vacancy should drop when the tenancy occupies the unit.
+    const typeAfter = await request(app.getHttpServer())
+      .get(`/api/v1/organizations/${organizationId}/properties/${propertyId}/unit-types/${unitTypeId}`)
+      .set('Authorization', `Bearer ${ownerToken}`);
+    expect(typeAfter.body.data.vacantCount).toBe(0);
   });
 
   it("rejects inviting a tenant into another organization's unit", async () => {

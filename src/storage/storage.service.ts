@@ -18,6 +18,8 @@ export interface StoredFile {
   url: string;
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
+
 @Injectable()
 export class StorageService {
   private readonly root: string;
@@ -33,6 +35,9 @@ export class StorageService {
    */
   async saveFile(file: Express.Multer.File, folder = 'images'): Promise<StoredFile> {
     if (!file?.buffer) throw new BadRequestException('No file received');
+    if (file.size > MAX_FILE_SIZE) {
+      throw new BadRequestException(`File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`);
+    }
     const mime = (file.mimetype ?? '').toLowerCase();
     if (!ALLOWED_MIME.test(mime)) {
       throw new BadRequestException('Only JPEG, PNG, WebP, GIF, or AVIF images are allowed');

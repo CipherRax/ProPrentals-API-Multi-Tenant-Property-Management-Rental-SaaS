@@ -23,6 +23,18 @@ import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OrgRoles } from '../auth/decorators/roles.decorator';
 
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024; // 5MB — matches StorageService
+
+const uploadOptions = {
+  storage: memoryStorage(),
+  limits: {
+    fileSize: MAX_UPLOAD_SIZE,
+    files: 10,
+    fields: 4,
+    parts: 20,
+  },
+};
+
 @ApiTags('properties')
 @ApiBearerAuth()
 @UseGuards(JwtAccessGuard)
@@ -92,7 +104,7 @@ export class PropertiesController {
 
   @Post(':propertyId/images/upload')
   @OrgRoles('OWNER', 'PROPERTY_MANAGER')
-  @UseInterceptors(FilesInterceptor('files', 10, { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('files', 10, uploadOptions))
   uploadImages(
     @CurrentUser('userId') userId: string,
     @Param('organizationId') organizationId: string,

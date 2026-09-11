@@ -7,6 +7,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { AuthModule } from '../auth/auth.module';
 import { TenanciesModule } from '../tenancies/tenancies.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UnitTypesModule } from '../unit-types/unit-types.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     AuthModule,
     TenanciesModule,
     NotificationsModule,
+    UnitTypesModule,
   ],
   controllers: [TenantInvitationsController, PublicTenantInvitationsController],
   providers: [TenantInvitationsService],

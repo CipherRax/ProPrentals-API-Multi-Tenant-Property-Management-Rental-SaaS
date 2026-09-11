@@ -10,7 +10,6 @@ import {
   Bath,
   Ruler,
   SlidersHorizontal,
-  X,
   Heart,
   ShieldCheck,
   ChevronDown,
@@ -19,8 +18,9 @@ import {
   ReceiptText,
   ArrowRight,
   Users,
+  Eye,
 } from 'lucide-react';
-import { api, formatMoney, titleCase, resolveAssetUrl } from '@/lib/api';
+import { api, formatMoney, resolveAssetUrl } from '@/lib/api';
 import { PageLoader } from '@/components/ui/Spinner';
 import { PageTitle } from '@/components/ui/PageTitle';
 import { Modal } from '@/components/ui/Modal';
@@ -74,6 +74,7 @@ export function Marketplace() {
   const [maxPrice, setMaxPrice] = useState('');
   const [amenities, setAmenities] = useState<string[]>([]);
   const [sort, setSort] = useState<'asc' | 'desc'>('asc');
+  const [includeUnavailable, setIncludeUnavailable] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [selected, setSelected] = useState<Listing | null>(null);
@@ -97,6 +98,7 @@ export function Marketplace() {
           minPrice: minPrice ? Number(minPrice) : undefined,
           maxPrice: maxPrice ? Number(maxPrice) : undefined,
           amenities: amenities.length ? amenities : undefined,
+          includeUnavailable,
           sortOrder: sort,
           page: overridePage ?? 1,
           limit: 12,
@@ -110,7 +112,7 @@ export function Marketplace() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, county, unitType, bedrooms, minPrice, maxPrice, sort, amenities, error],
+    [search, county, unitType, bedrooms, minPrice, maxPrice, sort, amenities, includeUnavailable, error],
   );
 
   useEffect(() => {
@@ -161,6 +163,7 @@ export function Marketplace() {
     setMinPrice('');
     setMaxPrice('');
     setAmenities([]);
+    setIncludeUnavailable(false);
     setSort('asc');
     load(1);
   };
@@ -172,7 +175,7 @@ export function Marketplace() {
       await api.post('/inquiries/public', {
         ...inquiry,
         propertyId: selected.property?.id,
-        unitId: selected.id,
+        unitTypeId: selected.id,
       });
       success('Inquiry sent — the landlord will be in touch.');
       setInquiryOpen(false);
@@ -184,10 +187,14 @@ export function Marketplace() {
     }
   };
 
-  const listingImages = (l: Listing) =>
-    l.images?.length ? l.images : (l.property?.images ?? []);
+  const listingImages = (l: Listing) => {
+    if (l.images?.length) return l.images;
+    if (l.representativeImage) return [{ url: l.representativeImage }];
+    return l.property?.images ?? [];
+  };
 
-  const showFilters = search || county || unitType || bedrooms || minPrice || maxPrice || amenities.length;
+  const showFilters =
+    search || county || unitType || bedrooms || minPrice || maxPrice || amenities.length || includeUnavailable;
 
   const homeHref = !user
     ? null
@@ -372,6 +379,20 @@ export function Marketplace() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIncludeUnavailable((v) => !v)}
+              aria-pressed={includeUnavailable}
+              title="Show fully booked unit types (greyed out)"
+              className={`inline-flex items-center gap-1.5 rounded-control border px-3 py-2 text-sm font-medium transition-colors ${
+                includeUnavailable
+                  ? 'border-brand-500 bg-brand-500 text-white'
+                  : 'border-paper-200 bg-white text-paper-600 hover:border-brand-300 hover:text-brand-700'
+              }`}
+            >
+              <Eye className="h-4 w-4" />
+              <span className="hidden sm:inline">Show fully booked</span>
+            </button>
             <button
               className="btn-secondary lg:hidden"
               onClick={() => setFiltersOpen((o) => !o)}
@@ -672,7 +693,7 @@ export function Marketplace() {
       <Modal
         open={!!selected}
         onClose={() => setSelected(null)}
-        title={selected ? `${selected.unitNumber} · ${selected.property?.name ?? ''}` : ''}
+        title={selected ? `${selected.typeName} · ${selected.property?.name ?? ''}` : ''}
         size="lg"
       >
         {selected && (
@@ -683,7 +704,7 @@ export function Marketplace() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={resolveAssetUrl(listingImages(selected)[photoIdx]?.url)}
-                    alt={selected.unitNumber}
+                    alt={selected.typeName}
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -719,9 +740,15 @@ export function Marketplace() {
                     <ShieldCheck className="h-3 w-3" /> Verified property
                   </span>
                 )}
-                <span className="badge bg-paper-100 text-paper-600">
-                  {titleCase(selected.unitType)}
-                </span>
+                {selected.vacantCount !== undefined && selected.totalCount ? (
+                  selected.vacantCount > 0 ? (
+                    <span className="badge bg-emerald-50 text-emerald-700">
+                      {selected.vacantCount} of {selected.totalCount} available
+                    </span>
+                  ) : (
+                    <span className="badge bg-paper-100 text-paper-500">Fully booked</span>
+                  )
+                ) : null}
               </div>
             </div>
             {selected.property && (
@@ -837,10 +864,15 @@ function ListingCard({
   onToggleFavorite: () => void;
   onOpen: () => void;
 }) {
-  const images = l.images?.length ? l.images : (l.property?.images ?? []);
+  const images = l.representativeImage
+    ? [{ url: l.representativeImage }]
+    : l.images?.length
+      ? l.images
+      : (l.property?.images ?? []);
   const location = [l.property?.city, l.property?.county, l.property?.neighborhood]
     .filter(Boolean)
     .join(', ');
+  const fullyBooked = l.vacantCount !== undefined && l.vacantCount === 0;
 
   const handleKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -855,14 +887,16 @@ function ListingCard({
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={handleKey}
-      className="group cursor-pointer overflow-hidden rounded-card border border-paper-200 bg-white shadow-panel transition hover:-translate-y-0.5 hover:shadow-card-hover"
+      className={`group cursor-pointer overflow-hidden rounded-card border border-paper-200 bg-white shadow-panel transition hover:-translate-y-0.5 hover:shadow-card-hover ${
+        fullyBooked ? 'opacity-70 saturate-50' : ''
+      }`}
     >
       <div className="relative h-44 overflow-hidden bg-paper-100">
         {images[0] ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={resolveAssetUrl(images[0].url)}
-            alt={l.unitNumber}
+            alt={l.typeName}
             className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
           />
         ) : (
@@ -876,6 +910,19 @@ function ListingCard({
             <span className="text-xs font-normal text-paper-500">/mo</span>
           </span>
         </div>
+        {l.vacantCount !== undefined && l.totalCount !== undefined && (
+          <span
+            className={`absolute bottom-2 left-3 rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm ${
+              l.vacantCount > 0
+                ? 'bg-emerald-500 text-white'
+                : 'bg-paper-700/90 text-paper-100'
+            }`}
+          >
+            {l.vacantCount > 0
+              ? `${l.vacantCount} of ${l.totalCount} unit${l.totalCount > 1 ? 's' : ''} available`
+              : 'Fully booked'}
+          </span>
+        )}
         <button
           type="button"
           onClick={(e) => {
@@ -901,7 +948,7 @@ function ListingCard({
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <div className="font-semibold text-paper-900">{l.unitNumber}</div>
+            <div className="font-semibold text-paper-900">{l.typeName}</div>
             <div className="text-sm text-paper-500">{l.property?.name}</div>
           </div>
           {l.property?.verificationStatus === 'VERIFIED' && (

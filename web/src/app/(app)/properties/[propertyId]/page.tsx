@@ -15,6 +15,9 @@ import {
   ImagePlus,
   Camera,
   Trash2,
+  Layers,
+  Minus,
+  Pencil,
 } from 'lucide-react';
 import { useAuth, getErrorMessage } from '@/lib/auth';
 import { api, formatMoney, resolveAssetUrl } from '@/lib/api';
@@ -23,7 +26,7 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/lib/toast';
-import type { Property, Building, Unit } from '@/types';
+import type { Property, Building, Unit, UnitTypeDefinition } from '@/types';
 
 const unitTypes = [
   'APARTMENT',
@@ -52,15 +55,34 @@ export default function PropertyDetailPage() {
   const [property, setProperty] = useState<Property | null>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [unitTypeDefs, setUnitTypeDefs] = useState<UnitTypeDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [unitOpen, setUnitOpen] = useState(false);
   const [buildingOpen, setBuildingOpen] = useState(false);
+  const [typeOpen, setTypeOpen] = useState(false);
+  const [editingType, setEditingType] = useState<UnitTypeDefinition | null>(null);
   const [saving, setSaving] = useState(false);
+  const [stepperBusy, setStepperBusy] = useState<string | null>(null);
+  const [typeToggling, setTypeToggling] = useState<string | null>(null);
+
+  const [typeForm, setTypeForm] = useState({
+    typeName: '',
+    baseRent: '',
+    depositAmount: '',
+    bedrooms: '',
+    bathrooms: '',
+    sizeSqm: '',
+    trackingMode: 'AUTO' as 'AUTO' | 'MANUAL',
+    totalCount: '',
+    vacantCount: '',
+    description: '',
+    isPubliclyListable: true,
+  });
 
   const [unitForm, setUnitForm] = useState({
     buildingId: '',
     unitNumber: '',
-    unitType: 'BEDSITTER',
+    unitTypeName: 'BEDSITTER',
     floor: '',
     bedrooms: '',
     bathrooms: '',
@@ -85,7 +107,7 @@ export default function PropertyDetailPage() {
     if (!activeOrg) return;
     setLoading(true);
     try {
-      const [p, b, u] = await Promise.all([
+      const [p, b, u, t] = await Promise.all([
         api.get<Property>(`/organizations/${activeOrg.id}/properties/${propertyId}`),
         api.getList<Building>(`/organizations/${activeOrg.id}/properties/${propertyId}/buildings`, {
           limit: 100,
@@ -93,10 +115,15 @@ export default function PropertyDetailPage() {
         api.getList<Unit>(`/organizations/${activeOrg.id}/properties/${propertyId}/units`, {
           limit: 100,
         }),
+        api.getList<UnitTypeDefinition>(
+          `/organizations/${activeOrg.id}/properties/${propertyId}/unit-types`,
+          { limit: 100 },
+        ),
       ]);
       setProperty(p);
       setBuildings(b.items);
       setUnits(u.items);
+      setUnitTypeDefs(t.items);
     } catch (e) {
       error(getErrorMessage(e));
     } finally {
@@ -131,7 +158,7 @@ export default function PropertyDetailPage() {
       setUnitForm({
         buildingId: '',
         unitNumber: '',
-        unitType: 'BEDSITTER',
+        unitTypeName: 'BEDSITTER',
         floor: '',
         bedrooms: '',
         bathrooms: '',
@@ -210,6 +237,124 @@ export default function PropertyDetailPage() {
       error(getErrorMessage(e));
     } finally {
       setToggling(null);
+    }
+  };
+
+  const openTypeModal = (t?: UnitTypeDefinition) => {
+    if (!activeOrg) return;
+    if (t) {
+      setEditingType(t);
+      setTypeForm({
+        typeName: t.typeName,
+        baseRent: t.baseRent ?? '',
+        depositAmount: t.depositAmount ?? '',
+        bedrooms: t.bedrooms != null ? String(t.bedrooms) : '',
+        bathrooms: t.bathrooms != null ? String(t.bathrooms) : '',
+        sizeSqm: t.sizeSqm != null ? String(t.sizeSqm) : '',
+        trackingMode: t.trackingMode ?? 'AUTO',
+        totalCount: t.totalCount != null ? String(t.totalCount) : '',
+        vacantCount: t.vacantCount != null ? String(t.vacantCount) : '',
+        description: t.description ?? '',
+        isPubliclyListable: t.isPubliclyListable ?? true,
+      });
+    } else {
+      setEditingType(null);
+      setTypeForm({
+        typeName: '',
+        baseRent: '',
+        depositAmount: '',
+        bedrooms: '',
+        bathrooms: '',
+        sizeSqm: '',
+        trackingMode: 'AUTO',
+        totalCount: '',
+        vacantCount: '',
+        description: '',
+        isPubliclyListable: true,
+      });
+    }
+    setTypeOpen(true);
+  };
+
+  const saveUnitType = async () => {
+    if (!activeOrg) return;
+    setSaving(true);
+    try {
+      const payload = {
+        typeName: typeForm.typeName,
+        baseRent: Number(typeForm.baseRent),
+        depositAmount: Number(typeForm.depositAmount),
+        bedrooms: typeForm.bedrooms ? Number(typeForm.bedrooms) : undefined,
+        bathrooms: typeForm.bathrooms ? Number(typeForm.bathrooms) : undefined,
+        sizeSqm: typeForm.sizeSqm ? Number(typeForm.sizeSqm) : undefined,
+        description: typeForm.description || undefined,
+        isPubliclyListable: typeForm.isPubliclyListable,
+        trackingMode: typeForm.trackingMode,
+        ...(typeForm.trackingMode === 'MANUAL'
+          ? {
+              totalCount: typeForm.totalCount ? Number(typeForm.totalCount) : 0,
+              vacantCount: typeForm.vacantCount ? Number(typeForm.vacantCount) : 0,
+            }
+          : {}),
+      };
+      if (editingType) {
+        await api.patch(
+          `/organizations/${activeOrg.id}/properties/${propertyId}/unit-types/${editingType.id}`,
+          payload,
+        );
+        success(`Unit type "${typeForm.typeName}" updated.`);
+      } else {
+        await api.post(
+          `/organizations/${activeOrg.id}/properties/${propertyId}/unit-types`,
+          payload,
+        );
+        success(`Unit type "${typeForm.typeName}" created.`);
+      }
+      setTypeOpen(false);
+      setEditingType(null);
+      load();
+    } catch (e) {
+      error(getErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const stepVacancy = async (t: UnitTypeDefinition, delta: number) => {
+    if (!activeOrg) return;
+    setStepperBusy(t.id);
+    try {
+      await api.post(
+        `/organizations/${activeOrg.id}/properties/${propertyId}/unit-types/${t.id}/vacancy`,
+        { delta },
+      );
+      load();
+    } catch (e) {
+      error(getErrorMessage(e));
+    } finally {
+      setStepperBusy(null);
+    }
+  };
+
+  const toggleTypeMarketplace = async (t: UnitTypeDefinition, next: boolean) => {
+    if (!activeOrg) return;
+    setTypeToggling(t.id);
+    try {
+      if (next && !property?.isPubliclyListable) {
+        await api.patch(`/organizations/${activeOrg.id}/properties/${propertyId}`, {
+          isPubliclyListable: true,
+        });
+      }
+      await api.patch(
+        `/organizations/${activeOrg.id}/properties/${propertyId}/unit-types/${t.id}`,
+        { isPubliclyListable: next },
+      );
+      success(next ? 'Unit type listed in marketplace' : 'Unit type removed from marketplace');
+      load();
+    } catch (e) {
+      error(getErrorMessage(e));
+    } finally {
+      setTypeToggling(null);
     }
   };
 
@@ -334,6 +479,9 @@ export default function PropertyDetailPage() {
                 </button>
                 <button className="btn-secondary" onClick={() => setBuildingOpen(true)}>
                   <Building2 className="h-4 w-4" /> Add building
+                </button>
+                <button className="btn-secondary" onClick={() => openTypeModal()}>
+                  <Layers className="h-4 w-4" /> Add unit type
                 </button>
                 <button className="btn-primary" onClick={() => setUnitOpen(true)}>
                   <Plus className="h-4 w-4" /> Add unit
@@ -537,7 +685,7 @@ export default function PropertyDetailPage() {
                       <div className="text-sm font-medium text-paper-800">
                         {u.unitNumber}{' '}
                         <span className="text-xs font-normal capitalize text-paper-400">
-                          · {u.unitType.toLowerCase().replace(/_/g, ' ')}
+                          · {(u.unitTypeDefinition?.typeName ?? 'Unspecified').toLowerCase().replace(/_/g, ' ')}
                         </span>
                       </div>
                       <div className="text-xs text-paper-400">
@@ -663,8 +811,8 @@ export default function PropertyDetailPage() {
             <label className="label">Type</label>
             <select
               className="input"
-              value={unitForm.unitType}
-              onChange={(e) => uf_update('unitType', e.target.value)}
+              value={unitForm.unitTypeName}
+              onChange={(e) => uf_update('unitTypeName', e.target.value)}
             >
               {unitTypes.map((t) => (
                 <option key={t} value={t}>

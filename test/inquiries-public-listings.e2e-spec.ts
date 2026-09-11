@@ -5,13 +5,13 @@ import { AppModule } from '../src/app.module';
 
 // Public marketplace listings + property inquiries (spec §29–31): listing
 // search/detail need no auth, inquiries can be filed against a listed
-// unit by an anonymous visitor, and only the target org can manage them.
+// unit type by an anonymous visitor, and only the target org can manage them.
 describe('Public listings & inquiries (e2e)', () => {
   let app: INestApplication;
   let ownerToken: string;
   let organizationId: string;
   let propertyId: string;
-  let unitId: string;
+  let unitTypeId: string;
   let inquiryId: string;
 
   beforeAll(async () => {
@@ -54,34 +54,35 @@ describe('Public listings & inquiries (e2e)', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
         unitNumber: 'SC-4',
-        unitType: 'TWO_BEDROOM',
+        unitTypeName: 'Two Bedroom',
         baseRent: 20000,
         depositAmount: 20000,
         bedrooms: 2,
         bathrooms: 1,
         isPubliclyListable: true,
       });
-    unitId = unit.body.data.id;
+    unitTypeId = unit.body.data.unitTypeId;
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('lists the rentable unit publicly with no auth and searchable metadata', async () => {
+  it('lists the unit type publicly with no auth and searchable metadata', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/public/listings?city=Nakuru');
     expect(res.status).toBe(200);
-    const found = res.body.data.find((u: { id: string }) => u.id === unitId);
+    const found = res.body.data.find((t: { id: string }) => t.id === unitTypeId);
     expect(found).toBeDefined();
-    expect(found.unitNumber).toBe('SC-4');
+    expect(found.typeName).toBe('Two Bedroom');
     expect(found.property.city).toBe('Nakuru');
   });
 
   it('never leaks owner/tenant identifiers in a public listing', async () => {
-    const res = await request(app.getHttpServer()).get(`/api/v1/public/listings/${unitId}`);
+    const res = await request(app.getHttpServer()).get(`/api/v1/public/listings/${unitTypeId}`);
     expect(res.status).toBe(200);
     expect(res.body.data.organizationId).toBeUndefined();
     expect(res.body.data.property.organizationId).toBeUndefined();
+    expect(res.body.data.typeName).toBe('Two Bedroom');
   });
 
   it('returns marketplace summary totals', async () => {
@@ -90,17 +91,18 @@ describe('Public listings & inquiries (e2e)', () => {
     expect(res.body.data.availableUnits).toBeGreaterThanOrEqual(1);
   });
 
-  it('lets an anonymous visitor file an inquiry against the listed unit', async () => {
+  it('lets an anonymous visitor file an inquiry against the listed unit type', async () => {
     const res = await request(app.getHttpServer()).post('/api/v1/inquiries/public').send({
       name: 'Prospective Renter',
       email: 'prospect@example.com',
       phone: '+254700000099',
       message: 'Is this unit still available for October?',
-      unitId,
+      unitTypeId,
     });
     expect(res.status).toBe(201);
-    expect(res.body.data.unitId).toBe(unitId);
+    expect(res.body.data.unitTypeId).toBe(unitTypeId);
     expect(res.body.data.organizationId).toBeUndefined();
+    expect(res.body.data.vacantAtInquiry).toBeGreaterThanOrEqual(1);
     inquiryId = res.body.data.id;
   });
 
@@ -119,7 +121,7 @@ describe('Public listings & inquiries (e2e)', () => {
     expect(update.body.data.status).toBe('CONTACTED');
   });
 
-  it('rejects an inquiry targeting a unit that is not publicly listed', async () => {
+  it('rejects an inquiry targeting a type that is not publicly listed', async () => {
     const suffix = Date.now();
     const reg = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
@@ -138,12 +140,12 @@ describe('Public listings & inquiries (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Private Estate', propertyType: 'HOUSE', isPubliclyListable: false });
     const pid = prop.body.data.id;
-    const privateUnit = await request(app.getHttpServer())
+    const unit = await request(app.getHttpServer())
       .post(`/api/v1/organizations/${orgId}/properties/${pid}/units`)
       .set('Authorization', `Bearer ${token}`)
       .send({
         unitNumber: 'PRV-1',
-        unitType: 'ONE_BEDROOM',
+        unitTypeName: 'Studio',
         baseRent: 5000,
         depositAmount: 5000,
         isPubliclyListable: false,
@@ -153,7 +155,7 @@ describe('Public listings & inquiries (e2e)', () => {
       name: 'Nosey',
       email: 'nosey@example.com',
       message: 'hi',
-      unitId: privateUnit.body.data.id,
+      unitTypeId: unit.body.data.unitTypeId,
     });
     expect(res.status).toBe(400);
   });

@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { UnitAvailabilityStatus, UnitType } from '@prisma/client';
-import { IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsUUID, IsString } from 'class-validator';
+import { UnitAvailabilityStatus } from '@prisma/client';
+
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 export class QueryUnitsDto extends PaginationQueryDto {
@@ -9,10 +10,15 @@ export class QueryUnitsDto extends PaginationQueryDto {
   @IsUUID()
   buildingId?: string;
 
-  @ApiPropertyOptional({ enum: UnitType })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(UnitType)
-  unitType?: UnitType;
+  @IsString()
+  unitTypeId?: string;
+
+  @ApiPropertyOptional({ enum: String })
+  @IsOptional()
+  @IsString()
+  unitType?: string;
 
   @ApiPropertyOptional({ enum: UnitAvailabilityStatus })
   @IsOptional()

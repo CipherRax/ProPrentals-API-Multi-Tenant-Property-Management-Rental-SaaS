@@ -15,6 +15,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuditService } from '../common/utils/audit.service';
 import { TransactionalEmailService } from '../notifications/transactional-email.service';
+import { assertPasswordMeetsPolicy } from '../common/utils/password-policy.util';
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -103,6 +104,7 @@ export class AuthService {
       throw new ConflictException('An account with this email already exists');
     }
 
+    assertPasswordMeetsPolicy(dto.password);
     const passwordHash = await argon2.hash(dto.password);
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -186,6 +188,16 @@ export class AuthService {
           failedLoginCount: shouldLock ? 0 : failedLoginCount,
           lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : undefined,
         },
+      });
+      await this.audit.log({
+        organizationId: undefined,
+        actorUserId: user.id,
+        action: 'USER_LOGIN_FAILED',
+        entityType: 'User',
+        entityId: user.id,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+        newValue: { locked: shouldLock },
       });
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -273,6 +285,7 @@ export class AuthService {
     const valid = await argon2.verify(user.passwordHash, dto.currentPassword);
     if (!valid) throw new BadRequestException('Current password is incorrect');
 
+    assertPasswordMeetsPolicy(dto.newPassword);
     const passwordHash = await argon2.hash(dto.newPassword);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
 
@@ -326,6 +339,7 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired reset token');
     }
 
+    assertPasswordMeetsPolicy(newPassword);
     const passwordHash = await argon2.hash(newPassword);
 
     await this.prisma.$transaction([

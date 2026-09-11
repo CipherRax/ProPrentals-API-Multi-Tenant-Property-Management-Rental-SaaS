@@ -16,6 +16,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: config.get<string>('jwt.refreshSecret'),
+      algorithms: ['HS256'],
       passReqToCallback: true,
     });
   }

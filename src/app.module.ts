@@ -26,6 +26,7 @@ import { HealthModule } from './health/health.module';
 import { PropertiesModule } from './properties/properties.module';
 import { BuildingsModule } from './buildings/buildings.module';
 import { UnitsModule } from './units/units.module';
+import { UnitTypesModule } from './unit-types/unit-types.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { TenanciesModule } from './tenancies/tenancies.module';
 import { TenantInvitationsModule } from './tenant-invitations/tenant-invitations.module';import { RentConfigurationsModule } from './rent-configurations/rent-configurations.module';
@@ -81,6 +82,7 @@ import { AdminModule } from './admin/admin.module';
     PropertiesModule,
     BuildingsModule,
     UnitsModule,
+    UnitTypesModule,
     TenantsModule,
     TenanciesModule,
     TenantInvitationsModule,

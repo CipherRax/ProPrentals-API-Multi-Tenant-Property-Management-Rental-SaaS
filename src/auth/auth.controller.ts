@@ -38,6 +38,7 @@ export class AuthController {
 
   @Public()
   @UseGuards(JwtRefreshGuard)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
   refresh(@Req() req: Request & { user: { userId: string; jti: string; rawToken: string } }) {

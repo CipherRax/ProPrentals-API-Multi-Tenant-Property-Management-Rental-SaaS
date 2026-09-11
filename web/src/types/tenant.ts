@@ -3,7 +3,6 @@
 import type {
   TenancyStatus,
   TenantProfileStatus,
-  UnitType,
   RentChargeStatus,
   PaymentMethod,
   PaymentStatus,
@@ -41,7 +40,7 @@ export interface TenantDashboardData {
     expectedEndDate?: string | null;
     property: { id: string; name: string; addressLine?: string | null; city?: string | null };
     building?: { id: string; name: string } | null;
-    unit: { unitNumber: string; unitType: UnitType; floor?: string | null };
+    unit: { unitNumber: string; unitTypeDefinition?: { id: string; typeName: string } | null; floor?: string | null };
   };
   currentRentAmount?: number;
   nextDueDate?: string | null;

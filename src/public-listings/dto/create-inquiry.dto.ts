@@ -24,4 +24,8 @@ export class CreateInquiryDto {
   @IsOptional()
   @IsUUID()
   unitId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  unitTypeId?: string;
 }

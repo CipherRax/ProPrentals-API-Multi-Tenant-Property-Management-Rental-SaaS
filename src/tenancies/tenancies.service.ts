@@ -9,6 +9,7 @@ import {
 import { BillingFrequency, OrgRole, Prisma, TenancyStatus } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { UnitTypesService, CountSnapshot } from '../unit-types/unit-types.service';
 import { AuditService } from '../common/utils/audit.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -43,6 +44,7 @@ export class TenanciesService {
     private readonly audit: AuditService,
     private readonly ledger: LedgerService,
     private readonly notifications: NotificationsService,
+    private readonly unitTypes: UnitTypesService,
   ) {}
 
   private assertCanManage(role: OrgRole) {
@@ -58,9 +60,17 @@ export class TenanciesService {
    * Creates a tenancy inside an existing transaction. Enforces spec §72
    * rule 1 (a unit cannot have two active/pending tenancies at once) and
    * derives the unit's availabilityStatus + the tenant profile's status
-   * from the outcome — the two are never set independently.
+   * from the outcome — the two are never set independently. Also keeps
+   * unit-type vacancy in step (AUTO resync / MANUAL decrement). When
+   * `out` is supplied, the vacancy before/after snapshot is captured on
+   * it so the caller can fire low-vacancy alerts post-commit.
    */
-  async createTenancyWithinTransaction(tx: Tx, organizationId: string, terms: TenancyTerms) {
+  async createTenancyWithinTransaction(
+    tx: Tx,
+    organizationId: string,
+    terms: TenancyTerms,
+    out?: { vacancy: CountSnapshot | null },
+  ) {
     const unit = await tx.unit.findFirst({
       where: { id: terms.unitId, deletedAt: null, property: { organizationId } },
     });
@@ -145,6 +155,12 @@ export class TenanciesService {
         requiredAmount: terms.depositAmount,
       },
     });
+
+    // Keep the unit type's vacancy counts in step (AUTO: resync derived
+    // counts; MANUAL: consume one declared vacancy). Exposing the caller
+    // a before/after snapshot so post-commit low-vacancy alerts can fire.
+    const vacancy = await this.unitTypes.onTenancyCreated(tx, terms.unitId);
+    if (out) out.vacancy = vacancy;
 
     return tenancy;
   }
@@ -302,6 +318,7 @@ export class TenanciesService {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     this.assertCanManage(membership.role);
 
+    const vacancyOut: { vacancy: CountSnapshot | null } = { vacancy: null };
     const tenancy = await this.prisma.$transaction((tx) =>
       this.createTenancyWithinTransaction(tx, organizationId, {
         unitId: dto.unitId,
@@ -313,8 +330,16 @@ export class TenanciesService {
         billingFrequency: dto.billingFrequency,
         agreementUrl: dto.agreementUrl,
         notes: dto.notes,
-      }),
+      }, vacancyOut),
     );
+
+    if (vacancyOut.vacancy) {
+      await this.unitTypes.maybeAlertLowVacancy(
+        vacancyOut.vacancy.unitTypeId,
+        vacancyOut.vacancy.before,
+        vacancyOut.vacancy.after,
+      );
+    }
 
     await this.audit.log({
       organizationId,
@@ -345,7 +370,7 @@ export class TenanciesService {
         take: query.limit,
         orderBy: { createdAt: query.sortOrder },
         include: {
-          unit: { select: { id: true, unitNumber: true, propertyId: true } },
+          unit: { select: { id: true, unitNumber: true, propertyId: true, unitTypeDefinition: { select: { id: true, typeName: true } } } },
           tenantProfile: { select: { id: true, fullName: true, email: true, phone: true } },
         },
       }),
@@ -433,6 +458,9 @@ export class TenanciesService {
         data: { availabilityStatus: 'VACANT' },
       });
 
+      // Release the slot on the unit type (AUTO resync / MANUAL +1).
+      await this.unitTypes.onTenancyTerminated(tx, tenancy.unitId);
+
       // Close out the current rent configuration so the historical
       // pricing record accurately reflects that rent stopped applying at
       // termination, rather than looking like it's still "current".
@@ -473,7 +501,7 @@ export class TenanciesService {
       where: { tenantProfile: { userId } },
       orderBy: { createdAt: 'desc' },
       include: {
-        unit: { select: { id: true, unitNumber: true, propertyId: true } },
+        unit: { select: { id: true, unitNumber: true, propertyId: true, unitTypeDefinition: { select: { id: true, typeName: true } } } },
       },
     });
   }

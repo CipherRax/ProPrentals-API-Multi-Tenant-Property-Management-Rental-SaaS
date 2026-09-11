@@ -9,6 +9,7 @@ import { OrgRole, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { UnitTypesService } from '../unit-types/unit-types.service';
 import { AuditService } from '../common/utils/audit.service';
 import { StorageService } from '../storage/storage.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
@@ -25,6 +26,7 @@ export class UnitsService {
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
     private readonly subscriptions: SubscriptionsService,
+    private readonly unitTypes: UnitTypesService,
     private readonly audit: AuditService,
     private readonly storage: StorageService,
   ) {}
@@ -47,6 +49,7 @@ export class UnitsService {
     await this.getOwnedProperty(organizationId, propertyId);
     const unit = await this.prisma.unit.findFirst({
       where: { id: unitId, propertyId, deletedAt: null },
+      include: { unitTypeDefinition: true },
     });
     if (!unit) throw new NotFoundException('Unit not found');
     return unit;
@@ -67,23 +70,68 @@ export class UnitsService {
       }
     }
 
-    try {
-      const unit = await this.prisma.unit.create({
-        data: {
+    // Handle unit type: use unitTypeName from DTO to create/update unit type
+    let unitTypeId: string | null = null;
+    let isNewUnitType = false;
+
+    if (dto.unitTypeName) {
+      // Check if unit type already exists for this property
+      let unitType = await this.prisma.unitTypeDefinition.findFirst({
+        where: {
           propertyId,
-          buildingId: dto.buildingId,
-          unitNumber: dto.unitNumber,
-          unitType: dto.unitType,
-          floor: dto.floor,
-          bedrooms: dto.bedrooms,
-          bathrooms: dto.bathrooms,
-          sizeSqm: dto.sizeSqm,
-          baseRent: dto.baseRent,
-          depositAmount: dto.depositAmount,
-          description: dto.description,
-          amenities: dto.amenities ?? [],
-          isPubliclyListable: dto.isPubliclyListable,
+          typeName: dto.unitTypeName,
         },
+      });
+
+      if (unitType) {
+        // Use existing unit type
+        unitTypeId = unitType.id;
+        isNewUnitType = false;
+      } else {
+        // Create new unit type definition
+        unitType = await this.prisma.unitTypeDefinition.create({
+          data: {
+            propertyId,
+            typeName: dto.unitTypeName,
+            baseRent: dto.baseRent,
+            depositAmount: dto.depositAmount,
+            description: dto.description,
+            amenities: dto.amenities ?? [],
+            totalCount: 1,
+            vacantCount: 1,
+            isPubliclyListable: dto.isPubliclyListable ?? false,
+          },
+        });
+        unitTypeId = unitType.id;
+        isNewUnitType = true;
+      }
+    }
+
+    try {
+      const unit = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.unit.create({
+          data: {
+            propertyId,
+            buildingId: dto.buildingId,
+            unitNumber: dto.unitNumber,
+            unitTypeId,
+            floor: dto.floor,
+            bedrooms: dto.bedrooms,
+            bathrooms: dto.bathrooms,
+            sizeSqm: dto.sizeSqm,
+            baseRent: dto.baseRent,
+            depositAmount: dto.depositAmount,
+            description: dto.description,
+            amenities: dto.amenities ?? [],
+            isPubliclyListable: dto.isPubliclyListable,
+          },
+        });
+
+        // AUTO-tracked types resync so the new physical unit becomes stock
+        // (total/vacant +1). MANUAL types are landlord-declared — leave them.
+        await this.unitTypes.onUnitCreatedTx(tx, created.id);
+
+        return created;
       });
 
       await this.audit.log({
@@ -112,7 +160,8 @@ export class UnitsService {
       propertyId,
       deletedAt: null,
       ...(query.buildingId ? { buildingId: query.buildingId } : {}),
-      ...(query.unitType ? { unitType: query.unitType } : {}),
+      ...(query.unitTypeId ? { unitTypeId: query.unitTypeId } : {}),
+      ...(query.unitType ? { unitTypeDefinition: { typeName: query.unitType } } : {}),
       ...(query.availabilityStatus ? { availabilityStatus: query.availabilityStatus } : {}),
       ...(query.search ? { unitNumber: { contains: query.search, mode: 'insensitive' } } : {}),
     };
@@ -123,6 +172,7 @@ export class UnitsService {
         skip: paginationSkip(query.page, query.limit),
         take: query.limit,
         orderBy: { createdAt: query.sortOrder },
+        include: { unitTypeDefinition: true },
       }),
       this.prisma.unit.count({ where }),
     ]);
@@ -132,9 +182,10 @@ export class UnitsService {
 
   async findOne(userId: string, organizationId: string, propertyId: string, unitId: string) {
     await this.organizations.assertMembership(userId, organizationId);
+    await this.getOwnedProperty(organizationId, propertyId);
     const unit = await this.prisma.unit.findFirst({
       where: { id: unitId, propertyId, deletedAt: null },
-      include: { images: { orderBy: { sortOrder: 'asc' } }, building: true },
+      include: { images: { orderBy: { sortOrder: 'asc' } }, building: true, unitTypeDefinition: true },
     });
     if (!unit) throw new NotFoundException('Unit not found');
     return unit;
@@ -209,9 +260,18 @@ export class UnitsService {
       throw new ForbiddenException('Cannot remove a unit with an active tenancy');
     }
 
-    const archived = await this.prisma.unit.update({
-      where: { id: unitId },
-      data: { deletedAt: new Date(), availabilityStatus: 'UNAVAILABLE', isPubliclyListable: false },
+    const archived = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.unit.update({
+        where: { id: unitId },
+        data: {
+          deletedAt: new Date(),
+          availabilityStatus: 'UNAVAILABLE',
+          isPubliclyListable: false,
+        },
+      });
+      // AUTO-tracked types lose this unit from total/vacant.
+      await this.unitTypes.onUnitArchivedTx(tx, unitId);
+      return result;
     });
 
     await this.audit.log({

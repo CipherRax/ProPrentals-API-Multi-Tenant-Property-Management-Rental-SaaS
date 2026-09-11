@@ -65,4 +65,16 @@ export class InquiriesController {
   ) {
     return this.inquiries.updateStatus(userId, organizationId, inquiryId, dto);
   }
+
+  @Post('organizations/:organizationId/:inquiryId/release-hold')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER', 'STAFF')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Release a 30-minute vacancy soft-hold without changing status' })
+  releaseHold(
+    @CurrentUser('userId') userId: string,
+    @Param('organizationId', ParseUUIDPipe) organizationId: string,
+    @Param('inquiryId', ParseUUIDPipe) inquiryId: string,
+  ) {
+    return this.inquiries.releaseHold(userId, organizationId, inquiryId);
+  }
 }

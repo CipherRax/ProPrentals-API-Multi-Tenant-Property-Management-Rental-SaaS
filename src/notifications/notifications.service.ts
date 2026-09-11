@@ -148,6 +148,7 @@ export class NotificationsService {
         title: n.title,
         message: n.body,
         read: n.readAt !== null,
+        readAt: n.readAt,
         createdAt: n.createdAt,
       })),
       total,
@@ -196,6 +197,7 @@ export class NotificationsService {
       'ANNOUNCEMENTS',
       'MAINTENANCE_UPDATES',
       'LEASE_REMINDERS',
+      'VACANCY_ALERTS',
     ];
 
     return categories.map((category) => {

@@ -269,7 +269,7 @@ export default function TenantsPage() {
               <option value="">Select unit</option>
               {units.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.unitNumber} ({u.unitType})
+                  {u.unitNumber} ({u.unitTypeDefinition?.typeName ?? 'Unspecified'})
                 </option>
               ))}
             </select>

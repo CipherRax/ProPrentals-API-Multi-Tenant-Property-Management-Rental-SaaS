@@ -12,17 +12,55 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
 
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // Trust X-Forwarded-For when running behind a reverse proxy / load
+  // balancer so req.ip (used for rate limiting, audit logging, and
+  // account lockout attribution) reflects the real client address.
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   // CORP must allow cross-origin so the web app (frontendUrl) can render
   // uploaded images via <img> tags; otherwise browsers block them despite CORS.
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
       crossOriginOpenerPolicy: false,
+      hsts: {
+        // Enable HTTP Strict Transport Security for 1 year (365 days)
+        maxAge: 31536000,
+        // Only apply includeSubDomains and preload in non-development envs
+        // to allow HTTP during local development
+        includeSubDomains: isProd,
+        preload: isProd,
+      },
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          // API serves JSON only; inline/remote scripts are not needed.
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'blob:'],
+          fontSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          frameAncestors: ["'none'"],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+        },
+      },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     }),
   );
+
+  // Express defaults to no JSON body size cap; impose a sensible limit
+  // (1 MB) to prevent memory-exhaustion via oversized request bodies.
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
   app.enableCors({
     origin: config.get<string>('frontendUrl'),
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   });
 
   // Serve locally uploaded images (storage provider "local") statically

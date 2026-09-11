@@ -89,7 +89,7 @@ export class DashboardService {
         building: activeTenancy.unit.building,
         unit: {
           unitNumber: activeTenancy.unit.unitNumber,
-          unitType: activeTenancy.unit.unitType,
+          unitTypeId: activeTenancy.unit.unitTypeId,
           floor: activeTenancy.unit.floor,
         },
       },

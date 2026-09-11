@@ -204,11 +204,33 @@ export interface Building {
   _count?: { units: number };
 }
 
+export type UnitTypeTrackingMode = 'AUTO' | 'MANUAL';
+
+export interface UnitTypeDefinition {
+  id: string;
+  typeName: string;
+  baseRent?: string;
+  depositAmount?: string;
+  description?: string | null;
+  amenities?: string[];
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  sizeSqm?: number | null;
+  trackingMode?: UnitTypeTrackingMode;
+  totalCount?: number;
+  vacantCount?: number;
+  listIndividually?: boolean;
+  representativeImage?: string | null;
+  isPubliclyListable?: boolean;
+  createdAt?: string;
+  unitsCount?: number;
+}
+
 export interface Unit {
   id: string;
   buildingId?: string | null;
   unitNumber: string;
-  unitType: UnitType;
+  unitTypeDefinition?: UnitTypeDefinition | null;
   floor?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
@@ -265,7 +287,7 @@ export interface Tenancy {
   billingFrequency: BillingFrequency;
   status: TenancyStatus;
   createdAt: string;
-  unit?: { id: string; unitNumber: string; unitType: UnitType };
+  unit?: { id: string; unitNumber: string; unitTypeDefinition?: UnitTypeDefinition | null };
   tenant?: { id: string; fullName: string; email: string };
   property?: { id: string; name: string };
 }
@@ -461,8 +483,7 @@ export interface MaintenanceRequest {
 
 export interface Listing {
   id: string;
-  unitNumber: string;
-  unitType: UnitType;
+  typeName: string;
   baseRent: string;
   depositAmount: string;
   bedrooms?: number | null;
@@ -470,6 +491,10 @@ export interface Listing {
   sizeSqm?: number | null;
   description?: string | null;
   amenities: string[];
+  trackingMode?: UnitTypeTrackingMode;
+  totalCount?: number;
+  vacantCount?: number;
+  representativeImage?: string | null;
   images?: { id?: string; url: string }[];
   property?: {
     id: string;
@@ -477,6 +502,7 @@ export interface Listing {
     city?: string | null;
     county?: string | null;
     neighborhood?: string | null;
+    propertyType?: string | null;
     verificationStatus?: string | null;
     images?: { id?: string; url: string }[];
   };
@@ -495,8 +521,12 @@ export interface Inquiry {
   message: string;
   status: InquiryStatus;
   createdAt: string;
+  vacantAtInquiry?: number | null;
+  reservedAt?: string | null;
+  reservationExpiresAt?: string | null;
   property?: { id: string; name: string } | null;
   unit?: { id: string; unitNumber: string } | null;
+  unitType?: { id: string; typeName: string } | null;
 }
 
 export interface Plan {
