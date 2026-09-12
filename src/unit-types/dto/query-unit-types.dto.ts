@@ -13,7 +13,9 @@ export class QueryUnitTypesDto {
   @IsUUID()
   buildingId?: string;
 
-  @ApiPropertyOptional({ description: 'vacant = only types with available slots; full = only fully booked types' })
+  @ApiPropertyOptional({
+    description: 'vacant = only types with available slots; full = only fully booked types',
+  })
   @IsOptional()
   @IsIn(['vacant', 'full'])
   fillStatus?: 'vacant' | 'full';

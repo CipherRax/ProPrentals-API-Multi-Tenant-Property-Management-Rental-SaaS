@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InquiryStatus, OrgRole, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
@@ -42,7 +42,7 @@ export class InquiriesService {
     let organizationId: string | null = null;
     let propertyId: string | null = dto.propertyId ?? null;
     const unitId: string | null = dto.unitId ?? null;
-    let unitTypeId: string | null = dto.unitTypeId ?? null;
+    const unitTypeId: string | null = dto.unitTypeId ?? null;
     let vacantAtInquiry: number | null = null;
 
     if (unitTypeId) {
@@ -55,7 +55,8 @@ export class InquiriesService {
         },
         include: { property: { select: { id: true, organizationId: true } } },
       });
-      if (!unitType) throw new BadRequestException('That unit type is not currently listed publicly');
+      if (!unitType)
+        throw new BadRequestException('That unit type is not currently listed publicly');
       organizationId = unitType.property.organizationId;
       propertyId = unitType.property.id;
       vacantAtInquiry = unitType.vacantCount;
@@ -190,7 +191,7 @@ export class InquiriesService {
       existing.reservationExpiresAt !== null &&
       existing.holdReleasedAt === null;
 
-    let holdBox: { holdEffect: { before?: number; after?: number } | null } = {
+    const holdBox: { holdEffect: { before?: number; after?: number } | null } = {
       holdEffect: null,
     };
 
@@ -198,12 +199,19 @@ export class InquiriesService {
       if (dto.status === 'CONVERTED' && existing.unitTypeId && transitioning) {
         // An active hold already counts this slot — re-marking CONVERTED is
         // a no-op for vacancy. Otherwise (fresh or expired) acquire a hold.
-        if (!hasActiveHold || (existing.reservationExpiresAt! < now && existing.holdReleasedAt === null)) {
+        if (
+          !hasActiveHold ||
+          (existing.reservationExpiresAt! < now && existing.holdReleasedAt === null)
+        ) {
           // Let any stale expired hold on this inquiry go first.
           if (existing.reservedAt !== null && existing.holdReleasedAt === null) {
             await this.unitTypes.releaseHoldTx(tx, existing);
           }
-          holdBox.holdEffect = await this.unitTypes.acquireHoldTx(tx, existing.id, existing.unitTypeId);
+          holdBox.holdEffect = await this.unitTypes.acquireHoldTx(
+            tx,
+            existing.id,
+            existing.unitTypeId,
+          );
         }
       } else if (
         dto.status !== 'CONVERTED' &&
@@ -234,10 +242,7 @@ export class InquiriesService {
       await this.audit.log({
         organizationId,
         actorUserId: userId,
-        action:
-          dto.status === 'CONVERTED'
-            ? 'VACANCY_HOLD_ACQUIRED'
-            : 'VACANCY_HOLD_RELEASED',
+        action: dto.status === 'CONVERTED' ? 'VACANCY_HOLD_ACQUIRED' : 'VACANCY_HOLD_RELEASED',
         entityType: 'PropertyInquiry',
         entityId: inquiryId,
         newValue: holdEffect,

@@ -34,7 +34,11 @@ export type UnitType =
   | 'SHOP'
   | 'OFFICE'
   | 'PARKING_SPACE'
+  | 'BUNGALOW'
+  | 'STUDIO'
   | 'OTHER';
+export type FurnishedStatus = 'UNFURNISHED' | 'SEMI_FURNISHED' | 'FULLY_FURNISHED';
+export type WaterAvailability = 'BOREHOLE' | 'PIPED' | 'TWENTY_FOUR_HOUR' | 'NONE';
 export type UnitAvailabilityStatus =
   'VACANT' | 'AVAILABLE' | 'RESERVED' | 'OCCUPIED' | 'MAINTENANCE' | 'UNAVAILABLE';
 export type TenantProfileStatus = 'INVITED' | 'ACTIVE' | 'INACTIVE';
@@ -173,6 +177,7 @@ export interface Property {
   county?: string | null;
   city?: string | null;
   neighborhood?: string | null;
+  estate?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   postalAddress?: string | null;
@@ -216,6 +221,16 @@ export interface UnitTypeDefinition {
   bedrooms?: number | null;
   bathrooms?: number | null;
   sizeSqm?: number | null;
+  unitType?: UnitType;
+  furnishedStatus?: FurnishedStatus | null;
+  parkingAvailable?: boolean;
+  parkingSpaces?: number | null;
+  waterAvailability?: WaterAvailability | null;
+  petFriendly?: boolean;
+  securityFeatures?: string[];
+  proximityTags?: string[];
+  utilitiesIncluded?: string[];
+  availableFrom?: string | null;
   trackingMode?: UnitTypeTrackingMode;
   totalCount?: number;
   vacantCount?: number;
@@ -239,6 +254,16 @@ export interface Unit {
   depositAmount: string;
   description?: string | null;
   amenities: string[];
+  unitType?: UnitType;
+  furnishedStatus?: FurnishedStatus | null;
+  parkingAvailable?: boolean;
+  parkingSpaces?: number | null;
+  waterAvailability?: WaterAvailability | null;
+  petFriendly?: boolean;
+  securityFeatures?: string[];
+  proximityTags?: string[];
+  utilitiesIncluded?: string[];
+  availableFrom?: string | null;
   isPubliclyListable: boolean;
   availabilityStatus: UnitAvailabilityStatus;
   createdAt: string;
@@ -268,6 +293,8 @@ export interface TenantInvitation {
   phone?: string | null;
   proposedRentAmount: string;
   proposedDepositAmount: string;
+  customRent?: boolean;
+  customDeposit?: boolean;
   proposedStartDate?: string | null;
   billingFrequency?: BillingFrequency | null;
   paymentDueDay?: number | null;
@@ -283,6 +310,8 @@ export interface Tenancy {
   endDate?: string | null;
   rentAmount: string;
   depositAmount: string;
+  customRent?: boolean;
+  customDeposit?: boolean;
   paymentDueDay?: number | null;
   billingFrequency: BillingFrequency;
   status: TenancyStatus;
@@ -491,6 +520,16 @@ export interface Listing {
   sizeSqm?: number | null;
   description?: string | null;
   amenities: string[];
+  unitType?: UnitType;
+  furnishedStatus?: FurnishedStatus | null;
+  parkingAvailable?: boolean;
+  parkingSpaces?: number | null;
+  waterAvailability?: WaterAvailability | null;
+  petFriendly?: boolean;
+  securityFeatures?: string[];
+  proximityTags?: string[];
+  utilitiesIncluded?: string[];
+  availableFrom?: string | null;
   trackingMode?: UnitTypeTrackingMode;
   totalCount?: number;
   vacantCount?: number;
@@ -502,6 +541,7 @@ export interface Listing {
     city?: string | null;
     county?: string | null;
     neighborhood?: string | null;
+    estate?: string | null;
     propertyType?: string | null;
     verificationStatus?: string | null;
     images?: { id?: string; url: string }[];
@@ -641,4 +681,145 @@ export interface AuditItem {
   newValue?: unknown;
   createdAt: string;
   actor?: { id: string; firstName?: string; lastName?: string; email?: string };
+}
+
+// ── Analytics & AI Insights (Part A) ──────────────────────────────
+export type AnalyticsScopeKind = 'portfolio' | 'property' | 'unitType';
+
+export interface AnalyticsScopeLabel {
+  kind: AnalyticsScopeKind;
+  propertyId?: string;
+  propertyName?: string;
+  unitTypeId?: string;
+  unitTypeName?: string;
+}
+
+export interface TrendPoint {
+  period: string;
+  value: number;
+}
+
+export interface PaymentTrendPoint {
+  period: string;
+  expectedRent: number;
+  collectedRent: number;
+  onTimePaymentRate: number | null;
+}
+
+export interface UnitTypeMetrics {
+  key: string;
+  propertyId: string;
+  propertyName: string;
+  unitTypeId: string | null;
+  unitTypeName: string;
+  unitTypeKind: string;
+  baseRent: number;
+  totalUnits: number;
+  occupiedUnits: number;
+  vacantUnits: number;
+  occupancyRate: number | null;
+  avgDaysToFill: number | null;
+  currentVacantAvgDays: number | null;
+  expectedRent30: number;
+  collectedRent30: number;
+  collectionRate: number | null;
+  onTimePaymentRate30: number | null;
+  onTimePaymentRate90: number | null;
+  inquiries30: number;
+  inquiriesConverted: number;
+  conversionRate30: number | null;
+}
+
+export interface AnalyticsResponse {
+  scope: AnalyticsScopeLabel;
+  currency: string;
+  viewsUnavailable: true;
+  metrics: {
+    occupancyRate: number | null;
+    occupiedUnits: number;
+    totalUnits: number;
+    vacantUnits: number;
+    maintenanceUnits: number;
+    avgDaysToFill: number | null;
+    currentVacantAvgDays: number | null;
+    onTimePaymentRate: number | null;
+    avgDaysLate: number | null;
+    expectedRent: number;
+    collectedRent: number;
+    collectedThisPeriod: number;
+    outstandingRent: number;
+    overdueRent: number;
+    collectionRate: number | null;
+    inquiriesTotal: number;
+    inquiriesConverted: number;
+    conversionRate: number | null;
+    viewsUnavailable: true;
+  };
+  trends: {
+    occupancyTrend30: TrendPoint[];
+    occupancyTrend90: TrendPoint[];
+    occupancyTrend365: TrendPoint[];
+    paymentTrend30: PaymentTrendPoint[];
+    paymentTrend90: PaymentTrendPoint[];
+    paymentTrend365: PaymentTrendPoint[];
+  };
+  byMethod30: Array<{ method: string; amount: number }>;
+  unitTypes: UnitTypeMetrics[];
+  comparisons: {
+    area: {
+      sampleCount: number | null;
+      avgRent: number | null;
+      yourAvgRent: number | null;
+      deltaPct: number | null;
+      unitTypeLabel: string;
+    } | null;
+  };
+}
+
+export interface InsightItem {
+  id: string;
+  title: string;
+  details: string;
+  unitTypeId?: string;
+  propertyId?: string;
+  metric?: string;
+  basis?: string;
+  dismissed?: boolean;
+}
+
+export interface InsightsResult {
+  generatedAt: string;
+  provider: string;
+  summary: string;
+  criticalIssues: InsightItem[];
+  suggestions: InsightItem[];
+  viewsUnavailable?: boolean;
+}
+
+// ── AI Natural Language Search (Part B) ───────────────────────────
+export interface AiParsedFilters {
+  unitType?: string;
+  bedrooms?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  county?: string;
+  neighborhood?: string;
+  city?: string;
+  furnished?: string[];
+  water?: string[];
+  securityFeatures?: string[];
+  proximityTags?: string[];
+  utilitiesIncluded?: string[];
+  amenities?: string[];
+  parking?: boolean;
+  petFriendly?: boolean;
+  availableFrom?: string;
+  keyword?: string;
+}
+
+export interface AiParsedSearch {
+  query: string;
+  filters: AiParsedFilters;
+  keyword?: string;
+  understood: Array<{ id: string; label: string; filter: string }>;
 }

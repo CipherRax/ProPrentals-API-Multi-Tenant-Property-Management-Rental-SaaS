@@ -3,7 +3,16 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Home, Building2, DoorOpen, ChevronRight, Loader2, ShieldCheck } from 'lucide-react';
+import {
+  Home,
+  Building2,
+  DoorOpen,
+  ShieldCheck,
+  Wallet,
+  ChevronRight,
+  Loader2,
+  BadgeAlert,
+} from 'lucide-react';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
@@ -20,7 +29,20 @@ interface InvitePreview {
     bedrooms?: number | null;
     bathrooms?: number | null;
   } | null;
+  proposedRentAmount?: string | number;
+  proposedDepositAmount?: string | number;
+  customRent?: boolean;
+  customDeposit?: boolean;
 }
+
+const formatAmount = (value?: string | number) =>
+  value == null
+    ? '—'
+    : new Intl.NumberFormat('en-KE', {
+        style: 'currency',
+        currency: 'KES',
+        maximumFractionDigits: 0,
+      }).format(Number(value));
 
 export default function InvitePage() {
   return (
@@ -175,7 +197,47 @@ function InviteFlow() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 divide-x divide-paper-100 border-t border-paper-100 px-6 py-4">
+              <div className="flex items-center gap-3 pr-4">
+                <Wallet className="h-5 w-5 text-brand-700" />
+                <div>
+                  <div className="text-xs text-paper-400">Rent / month</div>
+                  <div className="text-sm font-semibold text-paper-900">
+                    {formatAmount(preview?.proposedRentAmount)}
+                    {preview?.customRent && (
+                      <span className="ml-1.5 inline-block rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                        custom
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 pl-4">
+                <Wallet className="h-5 w-5 text-brand-700" />
+                <div>
+                  <div className="text-xs text-paper-400">Deposit</div>
+                  <div className="text-sm font-semibold text-paper-900">
+                    {formatAmount(preview?.proposedDepositAmount)}
+                    {preview?.customDeposit && (
+                      <span className="ml-1.5 inline-block rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                        custom
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="px-6 pb-6">
+              {(preview?.customRent || preview?.customDeposit) && (
+                <div className="mb-4 rounded-panel border border-amber-200 bg-amber-50 p-3">
+                  <p className="flex items-start gap-2 text-xs text-amber-800">
+                    <BadgeAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    Your landlord offered a custom rent and/or deposit for this unit. Accepting
+                    confirms you agree to the amounts shown above.
+                  </p>
+                </div>
+              )}
               <div className="rounded-panel border border-brand-100 bg-brand-50/40 p-4">
                 <p className="flex items-start gap-2 text-sm text-paper-600">
                   <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" />

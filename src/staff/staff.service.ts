@@ -372,7 +372,12 @@ export class StaffService {
 
     return {
       message: 'Invitation accepted. Welcome!',
-      user: { id: result.user.id, email: result.user.email, firstName: result.user.firstName, lastName: result.user.lastName },
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        firstName: result.user.firstName,
+        lastName: result.user.lastName,
+      },
       organizationRole: result.membership.role,
       ...tokens,
     };

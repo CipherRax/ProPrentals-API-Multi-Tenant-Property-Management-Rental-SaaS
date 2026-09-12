@@ -1,7 +1,10 @@
 import { Transform, Type } from 'class-transformer';
+import { FurnishedStatus, UnitType, WaterAvailability } from '@prisma/client';
 import {
   IsArray,
   IsBoolean,
+  IsDateString,
+  IsEnum,
   IsIn,
   IsInt,
   IsNumber,
@@ -10,6 +13,12 @@ import {
   Max,
   Min,
 } from 'class-validator';
+
+const toArray = ({ value }: { value: unknown }) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const arr = Array.isArray(value) ? value : String(value).split(',');
+  return arr.map((v) => String(v).trim()).filter(Boolean);
+};
 
 export class PublicListingsQueryDto {
   @IsOptional()
@@ -30,11 +39,15 @@ export class PublicListingsQueryDto {
 
   @IsOptional()
   @IsString()
-  propertyType?: string;
+  estate?: string;
 
   @IsOptional()
   @IsString()
-  unitType?: string;
+  propertyType?: string;
+
+  @IsOptional()
+  @IsEnum(UnitType)
+  unitType?: UnitType;
 
   @IsOptional()
   @Type(() => Number)
@@ -61,14 +74,54 @@ export class PublicListingsQueryDto {
   bathrooms?: number;
 
   @IsOptional()
-  @Transform(({ value }) => {
-    if (value === undefined || value === null || value === '') return undefined;
-    const arr = Array.isArray(value) ? value : String(value).split(',');
-    return arr.map((v) => v.trim()).filter(Boolean);
-  })
+  @Transform(toArray)
   @IsArray()
   @IsString({ each: true })
   amenities?: string[];
+
+  @IsOptional()
+  @Transform(toArray)
+  @IsArray()
+  @IsEnum(FurnishedStatus, { each: true })
+  furnished?: FurnishedStatus[];
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  parking?: boolean;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  petFriendly?: boolean;
+
+  @IsOptional()
+  @Transform(toArray)
+  @IsArray()
+  @IsEnum(WaterAvailability, { each: true })
+  water?: WaterAvailability[];
+
+  @IsOptional()
+  @Transform(toArray)
+  @IsArray()
+  @IsString({ each: true })
+  securityFeatures?: string[];
+
+  @IsOptional()
+  @Transform(toArray)
+  @IsArray()
+  @IsString({ each: true })
+  proximityTags?: string[];
+
+  @IsOptional()
+  @Transform(toArray)
+  @IsArray()
+  @IsString({ each: true })
+  utilitiesIncluded?: string[];
+
+  @IsOptional()
+  @IsDateString()
+  availableFrom?: string;
 
   @IsOptional()
   @Type(() => Boolean)

@@ -143,8 +143,7 @@ export class NotificationsService {
       data.map((n) => ({
         id: n.id,
         type: n.type,
-        category:
-          NOTIFICATION_CATEGORY_MAP[n.type] ?? (n.type as unknown as NotificationCategory),
+        category: NOTIFICATION_CATEGORY_MAP[n.type] ?? (n.type as unknown as NotificationCategory),
         title: n.title,
         message: n.body,
         read: n.readAt !== null,

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Users, Search, Mail } from 'lucide-react';
 import { useAuth, getErrorMessage } from '@/lib/auth';
-import { api } from '@/lib/api';
+import { api, formatMoney } from '@/lib/api';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/Spinner';
 import { DataTable } from '@/components/ui/DataTable';
@@ -26,14 +26,17 @@ export default function TenantsPage() {
   const [saving, setSaving] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [form, setForm] = useState({
     propertyId: '',
     unitId: '',
     tenantFullName: '',
     email: '',
     phone: '',
-    proposedRentAmount: '',
-    proposedDepositAmount: '',
+    customRent: false,
+    rentOverride: '',
+    customDeposit: false,
+    depositOverride: '',
     proposedStartDate: '',
     billingFrequency: 'MONTHLY',
     paymentDueDay: '5',
@@ -71,7 +74,16 @@ export default function TenantsPage() {
   }, [activeOrg, load]);
 
   const chooseProperty = async (propertyId: string) => {
-    setForm((f) => ({ ...f, propertyId, unitId: '' }));
+    setForm((f) => ({
+      ...f,
+      propertyId,
+      unitId: '',
+      customRent: false,
+      customDeposit: false,
+      rentOverride: '',
+      depositOverride: '',
+    }));
+    setSelectedUnit(null);
     if (activeOrg && propertyId) {
       const d = await api.getList<Unit>(
         `/organizations/${activeOrg.id}/properties/${propertyId}/units`,
@@ -83,26 +95,45 @@ export default function TenantsPage() {
     }
   };
 
+  const chooseUnit = (unitId: string) => {
+    const u = units.find((x) => x.id === unitId) ?? null;
+    setSelectedUnit(u);
+    setForm((f) => ({
+      ...f,
+      unitId,
+      customRent: false,
+      customDeposit: false,
+      rentOverride: '',
+      depositOverride: '',
+    }));
+  };
+
   const update = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
+  const updateBool = (field: string, value: boolean) => setForm((f) => ({ ...f, [field]: value }));
 
   const invite = async () => {
     if (!activeOrg) return;
     setSaving(true);
     try {
-      await api.post(`/organizations/${activeOrg.id}/tenant-invitations`, {
+      const payload: Record<string, unknown> = {
         propertyId: form.propertyId,
         unitId: form.unitId,
         tenantFullName: form.tenantFullName,
         email: form.email,
         phone: form.phone || undefined,
-        proposedRentAmount: Number(form.proposedRentAmount),
-        proposedDepositAmount: form.proposedDepositAmount
-          ? Number(form.proposedDepositAmount)
-          : undefined,
         proposedStartDate: form.proposedStartDate || undefined,
         billingFrequency: form.billingFrequency,
         paymentDueDay: form.paymentDueDay ? Number(form.paymentDueDay) : undefined,
-      });
+      };
+      if (form.customRent && form.rentOverride) {
+        payload.proposedRentAmount = Number(form.rentOverride);
+        payload.customRent = true;
+      }
+      if (form.customDeposit && form.depositOverride) {
+        payload.proposedDepositAmount = Number(form.depositOverride);
+        payload.customDeposit = true;
+      }
+      await api.post(`/organizations/${activeOrg.id}/tenant-invitations`, payload);
       success(`Invitation sent to ${form.tenantFullName}.`);
       setInviteOpen(false);
       setForm({
@@ -111,12 +142,15 @@ export default function TenantsPage() {
         tenantFullName: '',
         email: '',
         phone: '',
-        proposedRentAmount: '',
-        proposedDepositAmount: '',
+        customRent: false,
+        rentOverride: '',
+        customDeposit: false,
+        depositOverride: '',
         proposedStartDate: '',
         billingFrequency: 'MONTHLY',
         paymentDueDay: '5',
       });
+      setSelectedUnit(null);
       load(1);
     } catch (e) {
       error(getErrorMessage(e));
@@ -263,7 +297,7 @@ export default function TenantsPage() {
             <select
               className="input"
               value={form.unitId}
-              onChange={(e) => update('unitId', e.target.value)}
+              onChange={(e) => chooseUnit(e.target.value)}
               disabled={!form.propertyId}
             >
               <option value="">Select unit</option>
@@ -286,24 +320,109 @@ export default function TenantsPage() {
               <option value="ANNUALLY">Annually</option>
             </select>
           </div>
-          <div>
-            <label className="label">Proposed rent (KSh) *</label>
-            <input
-              className="input"
-              type="number"
-              value={form.proposedRentAmount}
-              onChange={(e) => update('proposedRentAmount', e.target.value)}
-            />
+
+          {/* Rent & deposit are inherited from the selected unit */}
+          <div className="rounded-lg border border-paper-200 bg-paper-50/50 p-4 sm:col-span-2">
+            {!selectedUnit ? (
+              <p className="text-sm text-paper-400">
+                Select a unit above to see its listed rent and deposit. The invitation inherits
+                them automatically.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-md border border-paper-200 bg-white p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-medium uppercase tracking-wide text-paper-400">
+                        Monthly rent
+                      </div>
+                      <div className="mt-1 text-lg font-semibold text-paper-900">
+                        {formatMoney(selectedUnit.baseRent)}
+                      </div>
+                      {selectedUnit.unitTypeDefinition && (
+                        <div className="mt-0.5 text-xs text-paper-400">
+                          {selectedUnit.unitTypeDefinition.typeName}
+                        </div>
+                      )}
+                    </div>
+                    <label className="flex items-center gap-2 text-xs font-medium text-paper-600">
+                      <input
+                        type="checkbox"
+                        checked={form.customRent}
+                        onChange={(e) => updateBool('customRent', e.target.checked)}
+                        className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
+                      />
+                      Override
+                    </label>
+                  </div>
+                  {form.customRent && (
+                    <div className="mt-3">
+                      <input
+                        className="input w-full"
+                        type="number"
+                        min={0}
+                        placeholder="Custom rent (KSh)"
+                        value={form.rentOverride}
+                        onChange={(e) => update('rentOverride', e.target.value)}
+                      />
+                      {form.rentOverride &&
+                        Number(form.rentOverride) > 0 &&
+                        Number(form.rentOverride) !== Number(selectedUnit.baseRent) && (
+                          <p className="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
+                            This differs from the unit&apos;s listed rent of{' '}
+                            {formatMoney(selectedUnit.baseRent)}. The tenant will be offered the
+                            custom rate and the lease will record it as a custom rate.
+                          </p>
+                        )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-md border border-paper-200 bg-white p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-medium uppercase tracking-wide text-paper-400">
+                        Deposit
+                      </div>
+                      <div className="mt-1 text-lg font-semibold text-paper-900">
+                        {formatMoney(selectedUnit.depositAmount)}
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs font-medium text-paper-600">
+                      <input
+                        type="checkbox"
+                        checked={form.customDeposit}
+                        onChange={(e) => updateBool('customDeposit', e.target.checked)}
+                        className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
+                      />
+                      Override
+                    </label>
+                  </div>
+                  {form.customDeposit && (
+                    <div className="mt-3">
+                      <input
+                        className="input w-full"
+                        type="number"
+                        min={0}
+                        placeholder="Custom deposit (KSh)"
+                        value={form.depositOverride}
+                        onChange={(e) => update('depositOverride', e.target.value)}
+                      />
+                      {form.depositOverride &&
+                        Number(form.depositOverride) > 0 &&
+                        Number(form.depositOverride) !== Number(selectedUnit.depositAmount) && (
+                          <p className="mt-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
+                            This differs from the unit&apos;s listed deposit of{' '}
+                            {formatMoney(selectedUnit.depositAmount)}.
+                          </p>
+                        )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-          <div>
-            <label className="label">Proposed deposit (KSh)</label>
-            <input
-              className="input"
-              type="number"
-              value={form.proposedDepositAmount}
-              onChange={(e) => update('proposedDepositAmount', e.target.value)}
-            />
-          </div>
+
           <div>
             <label className="label">Proposed start date</label>
             <input

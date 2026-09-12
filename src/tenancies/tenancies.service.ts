@@ -32,6 +32,8 @@ interface TenancyTerms {
   billingFrequency?: BillingFrequency;
   agreementUrl?: string;
   notes?: string;
+  customRent?: boolean;
+  customDeposit?: boolean;
 }
 
 @Injectable()
@@ -102,6 +104,8 @@ export class TenanciesService {
         startDate: terms.startDate,
         rentAmount: terms.rentAmount,
         depositAmount: terms.depositAmount,
+        customRent: terms.customRent ?? false,
+        customDeposit: terms.customDeposit ?? false,
         paymentDueDay: terms.paymentDueDay ?? 5,
         billingFrequency: terms.billingFrequency ?? 'MONTHLY',
         agreementUrl: terms.agreementUrl,
@@ -300,9 +304,7 @@ export class TenanciesService {
         activated += 1;
       } catch (err) {
         errors += 1;
-        this.logger.error(
-          `Tenancy activation failed for ${tenancy.id}: ${(err as Error).message}`,
-        );
+        this.logger.error(`Tenancy activation failed for ${tenancy.id}: ${(err as Error).message}`);
       }
     }
 
@@ -320,17 +322,22 @@ export class TenanciesService {
 
     const vacancyOut: { vacancy: CountSnapshot | null } = { vacancy: null };
     const tenancy = await this.prisma.$transaction((tx) =>
-      this.createTenancyWithinTransaction(tx, organizationId, {
-        unitId: dto.unitId,
-        tenantProfileId: dto.tenantProfileId,
-        startDate: new Date(dto.startDate),
-        rentAmount: dto.rentAmount,
-        depositAmount: dto.depositAmount,
-        paymentDueDay: dto.paymentDueDay,
-        billingFrequency: dto.billingFrequency,
-        agreementUrl: dto.agreementUrl,
-        notes: dto.notes,
-      }, vacancyOut),
+      this.createTenancyWithinTransaction(
+        tx,
+        organizationId,
+        {
+          unitId: dto.unitId,
+          tenantProfileId: dto.tenantProfileId,
+          startDate: new Date(dto.startDate),
+          rentAmount: dto.rentAmount,
+          depositAmount: dto.depositAmount,
+          paymentDueDay: dto.paymentDueDay,
+          billingFrequency: dto.billingFrequency,
+          agreementUrl: dto.agreementUrl,
+          notes: dto.notes,
+        },
+        vacancyOut,
+      ),
     );
 
     if (vacancyOut.vacancy) {
@@ -370,7 +377,14 @@ export class TenanciesService {
         take: query.limit,
         orderBy: { createdAt: query.sortOrder },
         include: {
-          unit: { select: { id: true, unitNumber: true, propertyId: true, unitTypeDefinition: { select: { id: true, typeName: true } } } },
+          unit: {
+            select: {
+              id: true,
+              unitNumber: true,
+              propertyId: true,
+              unitTypeDefinition: { select: { id: true, typeName: true } },
+            },
+          },
           tenantProfile: { select: { id: true, fullName: true, email: true, phone: true } },
         },
       }),
@@ -501,7 +515,14 @@ export class TenanciesService {
       where: { tenantProfile: { userId } },
       orderBy: { createdAt: 'desc' },
       include: {
-        unit: { select: { id: true, unitNumber: true, propertyId: true, unitTypeDefinition: { select: { id: true, typeName: true } } } },
+        unit: {
+          select: {
+            id: true,
+            unitNumber: true,
+            propertyId: true,
+            unitTypeDefinition: { select: { id: true, typeName: true } },
+          },
+        },
       },
     });
   }

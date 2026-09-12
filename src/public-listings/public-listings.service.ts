@@ -59,6 +59,7 @@ export class PublicListingsService {
       if (query.county) propertyWhere.county = query.county;
       if (query.city) propertyWhere.city = query.city;
       if (query.neighborhood) propertyWhere.neighborhood = query.neighborhood;
+      if (query.estate) (propertyWhere as Prisma.PropertyWhereInput).estate = query.estate;
       if (query.propertyType) propertyWhere.propertyType = query.propertyType as never;
 
       const where: Prisma.UnitTypeDefinitionWhereInput = {
@@ -68,15 +69,23 @@ export class PublicListingsService {
         // hidden by default; the marketplace can opt in to show them
         // greyed out ("includeUnavailable").
         ...(query.includeUnavailable ? {} : { vacantCount: { gt: 0 } }),
-        ...(query.unitType
-          ? { typeName: { contains: query.unitType, mode: 'insensitive' } }
-          : {}),
         property: propertyWhere,
       };
+
+      if (query.unitType) {
+        // Structured enum match OR legacy free-text typeName contains so
+        // older records (typed OTHER before structured types existed)
+        // still surface.
+        where.OR = [
+          { unitType: query.unitType },
+          { typeName: { contains: query.unitType, mode: 'insensitive' } },
+        ];
+      }
 
       if (query.search) {
         const term = query.search;
         where.OR = [
+          ...(where.OR ?? []),
           { typeName: { contains: term, mode: 'insensitive' } },
           { property: { name: { contains: term, mode: 'insensitive' } } },
           { property: { city: { contains: term, mode: 'insensitive' } } },
@@ -93,6 +102,26 @@ export class PublicListingsService {
       if (query.bathrooms !== undefined) where.bathrooms = query.bathrooms;
       if (query.amenities?.length) {
         where.amenities = { hasEvery: query.amenities };
+      }
+      if (query.furnished?.length) {
+        where.furnishedStatus = { in: query.furnished };
+      }
+      if (query.parking !== undefined) where.parkingAvailable = query.parking;
+      if (query.petFriendly !== undefined) where.petFriendly = query.petFriendly;
+      if (query.water?.length) {
+        where.waterAvailability = { in: query.water };
+      }
+      if (query.securityFeatures?.length) {
+        where.securityFeatures = { hasSome: query.securityFeatures };
+      }
+      if (query.proximityTags?.length) {
+        where.proximityTags = { hasSome: query.proximityTags };
+      }
+      if (query.utilitiesIncluded?.length) {
+        where.utilitiesIncluded = { hasEvery: query.utilitiesIncluded };
+      }
+      if (query.availableFrom) {
+        where.availableFrom = { lte: new Date(query.availableFrom) };
       }
 
       const page = query.page ?? 1;
@@ -114,6 +143,16 @@ export class PublicListingsService {
             bedrooms: true,
             bathrooms: true,
             sizeSqm: true,
+            unitType: true,
+            furnishedStatus: true,
+            parkingAvailable: true,
+            parkingSpaces: true,
+            waterAvailability: true,
+            petFriendly: true,
+            securityFeatures: true,
+            proximityTags: true,
+            utilitiesIncluded: true,
+            availableFrom: true,
             trackingMode: true,
             totalCount: true,
             vacantCount: true,
@@ -127,6 +166,7 @@ export class PublicListingsService {
                 county: true,
                 city: true,
                 neighborhood: true,
+                estate: true,
                 description: true,
                 images: { select: { id: true, url: true }, take: 5 },
                 verificationStatus: true,
@@ -161,6 +201,16 @@ export class PublicListingsService {
         bedrooms: true,
         bathrooms: true,
         sizeSqm: true,
+        unitType: true,
+        furnishedStatus: true,
+        parkingAvailable: true,
+        parkingSpaces: true,
+        waterAvailability: true,
+        petFriendly: true,
+        securityFeatures: true,
+        proximityTags: true,
+        utilitiesIncluded: true,
+        availableFrom: true,
         trackingMode: true,
         totalCount: true,
         vacantCount: true,
@@ -176,6 +226,7 @@ export class PublicListingsService {
             county: true,
             city: true,
             neighborhood: true,
+            estate: true,
             amenities: true,
             contactPhone: true,
             contactEmail: true,

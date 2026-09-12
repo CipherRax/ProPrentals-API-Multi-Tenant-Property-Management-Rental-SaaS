@@ -56,7 +56,8 @@ export class TransactionalEmailService {
         organizationName,
         actionLabel: 'Open my account',
         actionUrl: invitationLink,
-        expiresNote: 'This invitation link is temporary and will expire soon, so please use it promptly.',
+        expiresNote:
+          'This invitation link is temporary and will expire soon, so please use it promptly.',
       }),
     );
     if (!emailResult.success) {
@@ -90,7 +91,8 @@ export class TransactionalEmailService {
         roleLabel,
         actionLabel: 'Accept invitation',
         actionUrl: invitationLink,
-        expiresNote: 'This invitation link is temporary and will expire soon, so please use it promptly.',
+        expiresNote:
+          'This invitation link is temporary and will expire soon, so please use it promptly.',
       }),
     );
     if (!emailResult.success) {

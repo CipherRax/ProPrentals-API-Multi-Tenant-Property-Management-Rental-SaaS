@@ -72,7 +72,6 @@ export class UnitsService {
 
     // Handle unit type: use unitTypeName from DTO to create/update unit type
     let unitTypeId: string | null = null;
-    let isNewUnitType = false;
 
     if (dto.unitTypeName) {
       // Check if unit type already exists for this property
@@ -86,7 +85,6 @@ export class UnitsService {
       if (unitType) {
         // Use existing unit type
         unitTypeId = unitType.id;
-        isNewUnitType = false;
       } else {
         // Create new unit type definition
         unitType = await this.prisma.unitTypeDefinition.create({
@@ -97,13 +95,22 @@ export class UnitsService {
             depositAmount: dto.depositAmount,
             description: dto.description,
             amenities: dto.amenities ?? [],
+            unitType: dto.unitType ?? 'OTHER',
+            furnishedStatus: dto.furnishedStatus,
+            parkingAvailable: dto.parkingAvailable ?? false,
+            parkingSpaces: dto.parkingSpaces,
+            waterAvailability: dto.waterAvailability,
+            petFriendly: dto.petFriendly ?? false,
+            securityFeatures: dto.securityFeatures ?? [],
+            proximityTags: dto.proximityTags ?? [],
+            utilitiesIncluded: dto.utilitiesIncluded ?? [],
+            availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
             totalCount: 1,
             vacantCount: 1,
             isPubliclyListable: dto.isPubliclyListable ?? false,
           },
         });
         unitTypeId = unitType.id;
-        isNewUnitType = true;
       }
     }
 
@@ -123,6 +130,16 @@ export class UnitsService {
             depositAmount: dto.depositAmount,
             description: dto.description,
             amenities: dto.amenities ?? [],
+            unitType: dto.unitType ?? 'OTHER',
+            furnishedStatus: dto.furnishedStatus,
+            parkingAvailable: dto.parkingAvailable ?? false,
+            parkingSpaces: dto.parkingSpaces,
+            waterAvailability: dto.waterAvailability,
+            petFriendly: dto.petFriendly ?? false,
+            securityFeatures: dto.securityFeatures ?? [],
+            proximityTags: dto.proximityTags ?? [],
+            utilitiesIncluded: dto.utilitiesIncluded ?? [],
+            availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
             isPubliclyListable: dto.isPubliclyListable,
           },
         });
@@ -185,7 +202,11 @@ export class UnitsService {
     await this.getOwnedProperty(organizationId, propertyId);
     const unit = await this.prisma.unit.findFirst({
       where: { id: unitId, propertyId, deletedAt: null },
-      include: { images: { orderBy: { sortOrder: 'asc' } }, building: true, unitTypeDefinition: true },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+        building: true,
+        unitTypeDefinition: true,
+      },
     });
     if (!unit) throw new NotFoundException('Unit not found');
     return unit;
@@ -227,9 +248,15 @@ export class UnitsService {
     }
 
     try {
+      const { availableFrom, ...rest } = dto;
       const updated = await this.prisma.unit.update({
         where: { id: unitId },
-        data: dto,
+        data: {
+          ...rest,
+          ...(availableFrom !== undefined
+            ? { availableFrom: availableFrom ? new Date(availableFrom) : null }
+            : {}),
+        },
       });
 
       await this.audit.log({

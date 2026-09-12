@@ -45,7 +45,9 @@ function layout(bodyHtml: string, note?: string): string {
             ${bodyHtml}
           </td>
         </tr>
-        ${note ? `
+        ${
+          note
+            ? `
         <tr>
           <td style="padding:0 32px 28px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${BRAND_SOFT};border-radius:8px;">
@@ -54,7 +56,9 @@ function layout(bodyHtml: string, note?: string): string {
               </tr>
             </table>
           </td>
-        </tr>` : ''}
+        </tr>`
+            : ''
+        }
         <tr>
           <td style="padding:18px 32px 24px;border-top:1px solid #ecece6;font-size:11.5px;line-height:18px;color:#8a8a80;">
             You're receiving this because you have an account with Habita,
@@ -181,7 +185,7 @@ export function passwordReset(p: PasswordResetTemplate): EmailSendPayload {
       '',
       p.actionUrl,
       '',
-      'If you didn\'t request this, you can safely ignore this email.',
+      "If you didn't request this, you can safely ignore this email.",
     ].join('\n'),
     html: layout(bodyHtml, 'This link expires in 1 hour.'),
   };

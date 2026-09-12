@@ -57,6 +57,32 @@ export class TenantInvitationsService {
       throw new NotFoundException('Unit not found in this organization/property');
     }
 
+    // Single source of truth for the lease amount: the unit's listed rent
+    // and deposit are inherited unless the inviter makes an EXPLICIT,
+    // flagged override. An unflagged diverging amount is a silent
+    // negotiation-in-hiding and is rejected.
+    const listedRent = Number(unit.baseRent);
+    const listedDeposit = Number(unit.depositAmount);
+    const proposedRentAmount =
+      dto.proposedRentAmount !== undefined ? dto.proposedRentAmount : listedRent;
+    const proposedDepositAmount =
+      dto.proposedDepositAmount !== undefined ? dto.proposedDepositAmount : listedDeposit;
+
+    const rentDiffers = Math.abs(proposedRentAmount - listedRent) > 0.005;
+    const depositDiffers = Math.abs(proposedDepositAmount - listedDeposit) > 0.005;
+    if (rentDiffers && dto.customRent !== true) {
+      throw new BadRequestException(
+        `Proposed rent ${proposedRentAmount} differs from the unit's listed rent (${listedRent}). ` +
+          'Mark the override explicitly with customRent: true.',
+      );
+    }
+    if (depositDiffers && dto.customDeposit !== true) {
+      throw new BadRequestException(
+        `Proposed deposit ${proposedDepositAmount} differs from the unit's listed deposit (${listedDeposit}). ` +
+          'Mark the override explicitly with customDeposit: true.',
+      );
+    }
+
     const conflicting = await this.prisma.tenancy.findFirst({
       where: { unitId: dto.unitId, status: { in: ['ACTIVE', 'PENDING'] } },
     });
@@ -75,8 +101,10 @@ export class TenantInvitationsService {
         tenantFullName: dto.tenantFullName,
         email: dto.email.toLowerCase(),
         phone: dto.phone,
-        proposedRentAmount: dto.proposedRentAmount,
-        proposedDepositAmount: dto.proposedDepositAmount,
+        proposedRentAmount,
+        proposedDepositAmount,
+        customRent: rentDiffers,
+        customDeposit: depositDiffers,
         proposedStartDate: dto.proposedStartDate ? new Date(dto.proposedStartDate) : new Date(),
         billingFrequency: dto.billingFrequency ?? 'MONTHLY',
         paymentDueDay: dto.paymentDueDay ?? 5,
@@ -221,6 +249,8 @@ export class TenantInvitationsService {
       tenantFullName: invitation.tenantFullName,
       proposedRentAmount: invitation.proposedRentAmount,
       proposedDepositAmount: invitation.proposedDepositAmount,
+      customRent: invitation.customRent,
+      customDeposit: invitation.customDeposit,
       proposedStartDate: invitation.proposedStartDate,
       billingFrequency: invitation.billingFrequency,
       expiresAt: invitation.expiresAt,
@@ -287,6 +317,8 @@ export class TenantInvitationsService {
             startDate: invitation.proposedStartDate ?? new Date(),
             rentAmount: Number(invitation.proposedRentAmount),
             depositAmount: Number(invitation.proposedDepositAmount),
+            customRent: invitation.customRent,
+            customDeposit: invitation.customDeposit,
             paymentDueDay: invitation.paymentDueDay,
             billingFrequency: invitation.billingFrequency,
           },
@@ -373,6 +405,8 @@ export class TenantInvitationsService {
           startDate: invitation.proposedStartDate ?? new Date(),
           rentAmount: Number(invitation.proposedRentAmount),
           depositAmount: Number(invitation.proposedDepositAmount),
+          customRent: invitation.customRent,
+          customDeposit: invitation.customDeposit,
           paymentDueDay: invitation.paymentDueDay,
           billingFrequency: invitation.billingFrequency,
         },

@@ -1,10 +1,9 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
-  IsInt,
   IsNotEmpty,
   IsNumber,
   IsUUID,
@@ -28,7 +27,10 @@ export class BulkVacancyItemDto {
 }
 
 export class BulkVacancyDto {
-  @ApiProperty({ type: [BulkVacancyItemDto], description: '1–250 entries; AUTO-tracked types are skipped and reported.' })
+  @ApiProperty({
+    type: [BulkVacancyItemDto],
+    description: '1–250 entries; AUTO-tracked types are skipped and reported.',
+  })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(250)

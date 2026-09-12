@@ -40,8 +40,22 @@ const unitTypes = [
   'SHOP',
   'OFFICE',
   'PARKING_SPACE',
+  'BUNGALOW',
+  'STUDIO',
   'OTHER',
 ];
+
+const furnishedOptions = ['UNFURNISHED', 'SEMI_FURNISHED', 'FULLY_FURNISHED'];
+
+const waterOptions = ['BOREHOLE', 'PIPED', 'TWENTY_FOUR_HOUR', 'NONE'];
+
+const splitList = (value: string) =>
+  value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+const joinList = (list?: string[]) => (list ?? []).map((v) => v.trim()).filter(Boolean).join(', ');
 
 export default function PropertyDetailPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
@@ -72,6 +86,16 @@ export default function PropertyDetailPage() {
     bedrooms: '',
     bathrooms: '',
     sizeSqm: '',
+    unitType: 'OTHER',
+    furnishedStatus: '',
+    parkingAvailable: false,
+    parkingSpaces: '',
+    waterAvailability: '',
+    petFriendly: false,
+    securityFeatures: '',
+    proximityTags: '',
+    utilitiesIncluded: '',
+    availableFrom: '',
     trackingMode: 'AUTO' as 'AUTO' | 'MANUAL',
     totalCount: '',
     vacantCount: '',
@@ -89,6 +113,16 @@ export default function PropertyDetailPage() {
     sizeSqm: '',
     baseRent: '',
     depositAmount: '',
+    unitType: 'OTHER',
+    furnishedStatus: '',
+    parkingAvailable: false,
+    parkingSpaces: '',
+    waterAvailability: '',
+    petFriendly: false,
+    securityFeatures: '',
+    proximityTags: '',
+    utilitiesIncluded: '',
+    availableFrom: '',
     isPubliclyListable: false,
   });
   const [buildingForm, setBuildingForm] = useState({
@@ -152,6 +186,16 @@ export default function PropertyDetailPage() {
         sizeSqm: unitForm.sizeSqm ? Number(unitForm.sizeSqm) : undefined,
         baseRent: Number(unitForm.baseRent),
         depositAmount: unitForm.depositAmount ? Number(unitForm.depositAmount) : undefined,
+        unitType: (unitForm.unitType || 'OTHER') as typeof unitTypes[number],
+        furnishedStatus: unitForm.furnishedStatus || undefined,
+        parkingAvailable: unitForm.parkingAvailable,
+        parkingSpaces: unitForm.parkingSpaces ? Number(unitForm.parkingSpaces) : undefined,
+        waterAvailability: unitForm.waterAvailability || undefined,
+        petFriendly: unitForm.petFriendly,
+        securityFeatures: splitList(unitForm.securityFeatures),
+        proximityTags: splitList(unitForm.proximityTags),
+        utilitiesIncluded: splitList(unitForm.utilitiesIncluded),
+        availableFrom: unitForm.availableFrom || undefined,
       });
       success(`Unit ${unitForm.unitNumber} added to ${property?.name ?? 'this property'}.`);
       setUnitOpen(false);
@@ -165,6 +209,16 @@ export default function PropertyDetailPage() {
         sizeSqm: '',
         baseRent: '',
         depositAmount: '',
+        unitType: 'OTHER',
+        furnishedStatus: '',
+        parkingAvailable: false,
+        parkingSpaces: '',
+        waterAvailability: '',
+        petFriendly: false,
+        securityFeatures: '',
+        proximityTags: '',
+        utilitiesIncluded: '',
+        availableFrom: '',
         isPubliclyListable: false,
       });
       load();
@@ -251,6 +305,16 @@ export default function PropertyDetailPage() {
         bedrooms: t.bedrooms != null ? String(t.bedrooms) : '',
         bathrooms: t.bathrooms != null ? String(t.bathrooms) : '',
         sizeSqm: t.sizeSqm != null ? String(t.sizeSqm) : '',
+        unitType: t.unitType ?? 'OTHER',
+        furnishedStatus: t.furnishedStatus ?? '',
+        parkingAvailable: t.parkingAvailable ?? false,
+        parkingSpaces: t.parkingSpaces != null ? String(t.parkingSpaces) : '',
+        waterAvailability: t.waterAvailability ?? '',
+        petFriendly: t.petFriendly ?? false,
+        securityFeatures: joinList(t.securityFeatures),
+        proximityTags: joinList(t.proximityTags),
+        utilitiesIncluded: joinList(t.utilitiesIncluded),
+        availableFrom: t.availableFrom ? String(t.availableFrom).slice(0, 10) : '',
         trackingMode: t.trackingMode ?? 'AUTO',
         totalCount: t.totalCount != null ? String(t.totalCount) : '',
         vacantCount: t.vacantCount != null ? String(t.vacantCount) : '',
@@ -266,6 +330,16 @@ export default function PropertyDetailPage() {
         bedrooms: '',
         bathrooms: '',
         sizeSqm: '',
+        unitType: 'OTHER',
+        furnishedStatus: '',
+        parkingAvailable: false,
+        parkingSpaces: '',
+        waterAvailability: '',
+        petFriendly: false,
+        securityFeatures: '',
+        proximityTags: '',
+        utilitiesIncluded: '',
+        availableFrom: '',
         trackingMode: 'AUTO',
         totalCount: '',
         vacantCount: '',
@@ -287,6 +361,16 @@ export default function PropertyDetailPage() {
         bedrooms: typeForm.bedrooms ? Number(typeForm.bedrooms) : undefined,
         bathrooms: typeForm.bathrooms ? Number(typeForm.bathrooms) : undefined,
         sizeSqm: typeForm.sizeSqm ? Number(typeForm.sizeSqm) : undefined,
+        unitType: (typeForm.unitType || 'OTHER') as typeof unitTypes[number],
+        furnishedStatus: typeForm.furnishedStatus || undefined,
+        parkingAvailable: typeForm.parkingAvailable,
+        parkingSpaces: typeForm.parkingSpaces ? Number(typeForm.parkingSpaces) : undefined,
+        waterAvailability: typeForm.waterAvailability || undefined,
+        petFriendly: typeForm.petFriendly,
+        securityFeatures: splitList(typeForm.securityFeatures),
+        proximityTags: splitList(typeForm.proximityTags),
+        utilitiesIncluded: splitList(typeForm.utilitiesIncluded),
+        availableFrom: typeForm.availableFrom || undefined,
         description: typeForm.description || undefined,
         isPubliclyListable: typeForm.isPubliclyListable,
         trackingMode: typeForm.trackingMode,
@@ -480,9 +564,6 @@ export default function PropertyDetailPage() {
                 <button className="btn-secondary" onClick={() => setBuildingOpen(true)}>
                   <Building2 className="h-4 w-4" /> Add building
                 </button>
-                <button className="btn-secondary" onClick={() => openTypeModal()}>
-                  <Layers className="h-4 w-4" /> Add unit type
-                </button>
                 <button className="btn-primary" onClick={() => setUnitOpen(true)}>
                   <Plus className="h-4 w-4" /> Add unit
                 </button>
@@ -630,6 +711,139 @@ export default function PropertyDetailPage() {
               Pick a unit above and add photos, so it stands out in the marketplace with its
               own pictures.
             </p>
+          </div>
+        )}
+      </section>
+
+      <section className="surface mb-6 p-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-paper-800">Unit types</h2>
+            <p className="mt-0.5 text-xs text-paper-400">
+              Each type becomes one card in the public marketplace. Add filterable attributes so
+              tenants can find your listing.
+            </p>
+          </div>
+          {canManage && (
+            <button className="btn-secondary" onClick={() => openTypeModal()}>
+              <Layers className="h-4 w-4" /> Add unit type
+            </button>
+          )}
+        </div>
+        {unitTypeDefs.length === 0 ? (
+          <div className="rounded-lg border-2 border-dashed border-paper-300 px-5 py-8 text-center text-sm text-paper-400">
+            No unit types yet. Add one to group identical units and surface them on the marketplace.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {unitTypeDefs.map((t) => (
+              <div key={t.id} className="rounded-lg border border-paper-200 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-medium text-paper-800">
+                      {t.typeName}
+                      {t.unitType && t.unitType !== 'OTHER' && (
+                        <span className="rounded-full bg-paper-100 px-2 py-0.5 text-[10px] font-normal capitalize text-paper-500">
+                          {t.unitType.toLowerCase().replace(/_/g, ' ')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 text-xs text-paper-400">
+                      {formatMoney(t.baseRent ?? 0, currency)}/mo · {t.bedrooms ? `${t.bedrooms} bd` : '—'}{' '}
+                      · {t.totalCount ?? 0} total / {t.vacantCount ?? 0} vacant
+                    </div>
+                    {(t.furnishedStatus || t.waterAvailability || t.parkingAvailable || t.petFriendly) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {t.furnishedStatus && (
+                          <span className="rounded-full border border-paper-200 px-2 py-0.5 text-[10px] text-paper-500">
+                            {t.furnishedStatus.toLowerCase().replace(/_/g, ' ')}
+                          </span>
+                        )}
+                        {t.waterAvailability && t.waterAvailability !== 'NONE' && (
+                          <span className="rounded-full border border-paper-200 px-2 py-0.5 text-[10px] text-paper-500">
+                            {t.waterAvailability.toLowerCase().replace(/_/g, ' ')} water
+                          </span>
+                        )}
+                        {t.parkingAvailable && (
+                          <span className="rounded-full border border-paper-200 px-2 py-0.5 text-[10px] text-paper-500">
+                            parking
+                          </span>
+                        )}
+                        {t.petFriendly && (
+                          <span className="rounded-full border border-paper-200 px-2 py-0.5 text-[10px] text-paper-500">
+                            pets ok
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      t.trackingMode === 'AUTO'
+                        ? 'bg-sky-50 text-sky-700'
+                        : 'bg-amber-50 text-amber-700'
+                    }`}
+                  >
+                    {t.trackingMode}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  {canManage && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => openTypeModal(t)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-paper-200 bg-white px-3 py-1 text-xs font-medium text-paper-500 transition hover:border-brand-300 hover:text-brand-700"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </button>
+                      {t.trackingMode === 'MANUAL' && (
+                        <div className="inline-flex items-center gap-1 rounded-full border border-paper-200 px-1 py-1">
+                          <button
+                            type="button"
+                            onClick={() => stepVacancy(t, -1)}
+                            disabled={stepperBusy === t.id || (t.vacantCount ?? 0) <= 0}
+                            className="rounded-full p-1 text-paper-500 transition hover:bg-paper-100 disabled:opacity-40"
+                            title="Decrease vacancy"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="text-xs font-medium text-paper-600">
+                            {stepperBusy === t.id ? '…' : `${t.vacantCount ?? 0} vac`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => stepVacancy(t, 1)}
+                            disabled={stepperBusy === t.id || (t.vacantCount ?? 0) >= (t.totalCount ?? 0)}
+                            className="rounded-full p-1 text-paper-500 transition hover:bg-paper-100 disabled:opacity-40"
+                            title="Increase vacancy"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggleTypeMarketplace(t, !t.isPubliclyListable)}
+                        disabled={typeToggling === t.id}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                          t.isPubliclyListable
+                            ? 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100'
+                            : 'border-paper-200 bg-white text-paper-500 hover:border-brand-300 hover:text-brand-700'
+                        } ${typeToggling === t.id ? 'opacity-60' : ''}`}
+                      >
+                        <Store className="h-3.5 w-3.5" />
+                        {typeToggling === t.id
+                          ? '…'
+                          : t.isPubliclyListable
+                            ? 'On marketplace'
+                            : 'Add to marketplace'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -875,6 +1089,114 @@ export default function PropertyDetailPage() {
               onChange={(e) => uf_update('depositAmount', e.target.value)}
             />
           </div>
+          <div>
+            <label className="label">Unit type</label>
+            <select
+              className="input"
+              value={unitForm.unitType}
+              onChange={(e) => uf_update('unitType', e.target.value)}
+            >
+              {unitTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t.toLowerCase().replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Furnishing</label>
+            <select
+              className="input"
+              value={unitForm.furnishedStatus}
+              onChange={(e) => uf_update('furnishedStatus', e.target.value)}
+            >
+              <option value="">Not set</option>
+              {furnishedOptions.map((f) => (
+                <option key={f} value={f}>
+                  {f.toLowerCase().replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Water</label>
+            <select
+              className="input"
+              value={unitForm.waterAvailability}
+              onChange={(e) => uf_update('waterAvailability', e.target.value)}
+            >
+              <option value="">Not set</option>
+              {waterOptions.map((w) => (
+                <option key={w} value={w}>
+                  {w.toLowerCase().replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Parking spaces</label>
+            <input
+              className="input"
+              type="number"
+              value={unitForm.parkingSpaces}
+              onChange={(e) => uf_update('parkingSpaces', e.target.value)}
+              placeholder="e.g. 1"
+            />
+          </div>
+          <div>
+            <label className="label">Available from</label>
+            <input
+              className="input"
+              type="date"
+              value={unitForm.availableFrom}
+              onChange={(e) => uf_update('availableFrom', e.target.value)}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Security features (comma-separated)</label>
+            <input
+              className="input"
+              value={unitForm.securityFeatures}
+              onChange={(e) => uf_update('securityFeatures', e.target.value)}
+              placeholder="e.g. gated, CCTV, 24/7 guards"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Close to (comma-separated)</label>
+            <input
+              className="input"
+              value={unitForm.proximityTags}
+              onChange={(e) => uf_update('proximityTags', e.target.value)}
+              placeholder="e.g. school, matatu stage, shopping center"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Utilities included (comma-separated)</label>
+            <input
+              className="input"
+              value={unitForm.utilitiesIncluded}
+              onChange={(e) => uf_update('utilitiesIncluded', e.target.value)}
+              placeholder="e.g. water, wifi, garbage collection"
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-paper-600">
+            <input
+              type="checkbox"
+              checked={unitForm.parkingAvailable}
+              onChange={(e) => uf_update('parkingAvailable', e.target.checked)}
+              className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
+            />
+            Parking available
+          </label>
+          <label className="flex items-center gap-2 text-sm text-paper-600">
+            <input
+              type="checkbox"
+              checked={unitForm.petFriendly}
+              onChange={(e) => uf_update('petFriendly', e.target.checked)}
+              className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
+            />
+            Pets allowed
+          </label>
           <label className="flex items-center gap-2 text-sm text-paper-600 sm:col-span-2">
             <input
               type="checkbox"
@@ -884,6 +1206,250 @@ export default function PropertyDetailPage() {
             />
             List in public marketplace
           </label>
+        </div>
+      </Modal>
+
+      <Modal
+        open={typeOpen}
+        onClose={() => setTypeOpen(false)}
+        title={editingType ? `Edit ${editingType.typeName}` : 'Add unit type'}
+        size="lg"
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setTypeOpen(false)}>
+              Cancel
+            </button>
+            <button
+              className="btn-primary"
+              onClick={saveUnitType}
+              disabled={saving || !typeForm.typeName || !typeForm.baseRent}
+            >
+              {saving ? 'Saving…' : editingType ? 'Save changes' : 'Create unit type'}
+            </button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label">Type name *</label>
+            <input
+              className="input"
+              value={typeForm.typeName}
+              onChange={(e) => setTypeForm((f) => ({ ...f, typeName: e.target.value }))}
+              placeholder="e.g. 2BR Fully Furnished"
+            />
+          </div>
+          <div>
+            <label className="label">Unit type</label>
+            <select
+              className="input"
+              value={typeForm.unitType}
+              onChange={(e) => setTypeForm((f) => ({ ...f, unitType: e.target.value }))}
+            >
+              {unitTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t.toLowerCase().replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Monthly rent (KSh) *</label>
+            <input
+              className="input"
+              type="number"
+              value={typeForm.baseRent}
+              onChange={(e) => setTypeForm((f) => ({ ...f, baseRent: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="label">Deposit (KSh)</label>
+            <input
+              className="input"
+              type="number"
+              value={typeForm.depositAmount}
+              onChange={(e) => setTypeForm((f) => ({ ...f, depositAmount: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="label">Bedrooms</label>
+            <input
+              className="input"
+              type="number"
+              value={typeForm.bedrooms}
+              onChange={(e) => setTypeForm((f) => ({ ...f, bedrooms: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="label">Bathrooms</label>
+            <input
+              className="input"
+              type="number"
+              value={typeForm.bathrooms}
+              onChange={(e) => setTypeForm((f) => ({ ...f, bathrooms: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="label">Size (sqm)</label>
+            <input
+              className="input"
+              type="number"
+              value={typeForm.sizeSqm}
+              onChange={(e) => setTypeForm((f) => ({ ...f, sizeSqm: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="label">Furnishing</label>
+            <select
+              className="input"
+              value={typeForm.furnishedStatus}
+              onChange={(e) => setTypeForm((f) => ({ ...f, furnishedStatus: e.target.value }))}
+            >
+              <option value="">Not set</option>
+              {furnishedOptions.map((f) => (
+                <option key={f} value={f}>
+                  {f.toLowerCase().replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Water</label>
+            <select
+              className="input"
+              value={typeForm.waterAvailability}
+              onChange={(e) => setTypeForm((f) => ({ ...f, waterAvailability: e.target.value }))}
+            >
+              <option value="">Not set</option>
+              {waterOptions.map((w) => (
+                <option key={w} value={w}>
+                  {w.toLowerCase().replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Parking spaces</label>
+            <input
+              className="input"
+              type="number"
+              value={typeForm.parkingSpaces}
+              onChange={(e) => setTypeForm((f) => ({ ...f, parkingSpaces: e.target.value }))}
+              placeholder="e.g. 2"
+            />
+          </div>
+          <div>
+            <label className="label">Available from</label>
+            <input
+              className="input"
+              type="date"
+              value={typeForm.availableFrom}
+              onChange={(e) => setTypeForm((f) => ({ ...f, availableFrom: e.target.value }))}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Security features (comma-separated)</label>
+            <input
+              className="input"
+              value={typeForm.securityFeatures}
+              onChange={(e) => setTypeForm((f) => ({ ...f, securityFeatures: e.target.value }))}
+              placeholder="e.g. gated, CCTV, 24/7 guards"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Close to (comma-separated)</label>
+            <input
+              className="input"
+              value={typeForm.proximityTags}
+              onChange={(e) => setTypeForm((f) => ({ ...f, proximityTags: e.target.value }))}
+              placeholder="e.g. school, matatu stage, shopping center"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label">Utilities included (comma-separated)</label>
+            <input
+              className="input"
+              value={typeForm.utilitiesIncluded}
+              onChange={(e) => setTypeForm((f) => ({ ...f, utilitiesIncluded: e.target.value }))}
+              placeholder="e.g. water, wifi, garbage collection"
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-paper-600">
+            <input
+              type="checkbox"
+              checked={typeForm.parkingAvailable}
+              onChange={(e) => setTypeForm((f) => ({ ...f, parkingAvailable: e.target.checked }))}
+              className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
+            />
+            Parking available
+          </label>
+          <label className="flex items-center gap-2 text-sm text-paper-600">
+            <input
+              type="checkbox"
+              checked={typeForm.petFriendly}
+              onChange={(e) => setTypeForm((f) => ({ ...f, petFriendly: e.target.checked }))}
+              className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
+            />
+            Pets allowed
+          </label>
+          <div className="sm:col-span-2">
+            <label className="label">Description</label>
+            <textarea
+              className="input"
+              rows={3}
+              value={typeForm.description}
+              onChange={(e) => setTypeForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder="Describe the unit type, fittings and finishes"
+            />
+          </div>
+          <div>
+            <label className="label">Tracking</label>
+            <select
+              className="input"
+              value={typeForm.trackingMode}
+              onChange={(e) =>
+                setTypeForm((f) => ({ ...f, trackingMode: e.target.value as 'AUTO' | 'MANUAL' }))
+              }
+            >
+              <option value="AUTO">AUTO — derive vacancy from tenancies</option>
+              <option value="MANUAL">MANUAL — track vacancy by hand</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <label className="flex items-center gap-2 text-sm text-paper-600">
+              <input
+                type="checkbox"
+                checked={typeForm.isPubliclyListable}
+                onChange={(e) =>
+                  setTypeForm((f) => ({ ...f, isPubliclyListable: e.target.checked }))
+                }
+                className="h-4 w-4 rounded border-paper-300 text-brand-700 focus:ring-brand-500"
+              />
+              List in public marketplace
+            </label>
+          </div>
+          {typeForm.trackingMode === 'MANUAL' && (
+            <>
+              <div>
+                <label className="label">Total units</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={typeForm.totalCount}
+                  onChange={(e) => setTypeForm((f) => ({ ...f, totalCount: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">Vacant units</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={typeForm.vacantCount}
+                  onChange={(e) => setTypeForm((f) => ({ ...f, vacantCount: e.target.value }))}
+                />
+              </div>
+            </>
+          )}
         </div>
       </Modal>
 

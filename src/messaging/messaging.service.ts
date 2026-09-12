@@ -93,7 +93,7 @@ export class MessagingService {
           tenantProfileId: profile?.id ?? null,
           tenant: {
             id: user?.id ?? null,
-            fullName: profile?.fullName ?? user ? `${user.firstName} ${user.lastName}` : 'Tenant',
+            fullName: (profile?.fullName ?? user) ? `${user.firstName} ${user.lastName}` : 'Tenant',
             email: profile?.email ?? user?.email ?? '',
             avatarUrl: profile?.profileImageUrl ?? user?.avatarUrl ?? null,
           },

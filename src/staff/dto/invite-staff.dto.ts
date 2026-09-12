@@ -12,7 +12,10 @@ export class InviteStaffDto {
   @IsString()
   fullName?: string;
 
-  @ApiProperty({ enum: [OrgRole.CARETAKER, OrgRole.ACCOUNTANT, OrgRole.PROPERTY_MANAGER, OrgRole.STAFF], example: OrgRole.CARETAKER })
+  @ApiProperty({
+    enum: [OrgRole.CARETAKER, OrgRole.ACCOUNTANT, OrgRole.PROPERTY_MANAGER, OrgRole.STAFF],
+    example: OrgRole.CARETAKER,
+  })
   @IsEnum(OrgRole)
   role: OrgRole;
 

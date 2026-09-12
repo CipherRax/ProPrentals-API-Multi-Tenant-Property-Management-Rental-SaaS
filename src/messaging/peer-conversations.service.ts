@@ -112,7 +112,10 @@ export class PeerConversationsService {
       },
     });
 
-    const peer = conversation.participantOneId === userId ? conversation.participantTwo : conversation.participantOne;
+    const peer =
+      conversation.participantOneId === userId
+        ? conversation.participantTwo
+        : conversation.participantOne;
     return {
       id: conversation.id,
       organizationId: conversation.organizationId,
@@ -131,7 +134,11 @@ export class PeerConversationsService {
     peerConversationId: string,
     query: PaginationQueryDto,
   ) {
-    const conversation = await this.assertPeerParticipant(userId, organizationId, peerConversationId);
+    const _conversation = await this.assertPeerParticipant(
+      userId,
+      organizationId,
+      peerConversationId,
+    );
 
     const where = { peerConversationId };
     const [data, total] = await this.prisma.$transaction([
@@ -192,7 +199,11 @@ export class PeerConversationsService {
     return { message: 'Marked as read' };
   }
 
-  private async assertPeerParticipant(userId: string, organizationId: string, peerConversationId: string) {
+  private async assertPeerParticipant(
+    userId: string,
+    organizationId: string,
+    peerConversationId: string,
+  ) {
     const conversation = await this.prisma.peerConversation.findFirst({
       where: { id: peerConversationId, organizationId },
     });

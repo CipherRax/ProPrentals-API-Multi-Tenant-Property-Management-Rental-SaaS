@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UnitTypeDefinition } from '@prisma/client';
+import { FurnishedStatus, UnitType, WaterAvailability } from '@prisma/client';
 import {
   IsArray,
+  IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsNumber,
@@ -21,7 +23,9 @@ export class CreateUnitDto {
   @IsString()
   unitNumber: string;
 
-  @ApiPropertyOptional({ description: 'Unit type name (e.g. Bedsitter, 1BR, 2BR). If omitted, a new type is created.' })
+  @ApiPropertyOptional({
+    description: 'Unit type name (e.g. Bedsitter, 1BR, 2BR). If omitted, a new type is created.',
+  })
   @IsOptional()
   @IsString()
   unitTypeName?: string;
@@ -69,6 +73,60 @@ export class CreateUnitDto {
   @IsArray()
   @IsString({ each: true })
   amenities?: string[];
+
+  @ApiPropertyOptional({ enum: UnitType })
+  @IsOptional()
+  @IsEnum(UnitType)
+  unitType?: UnitType;
+
+  @ApiPropertyOptional({ enum: FurnishedStatus })
+  @IsOptional()
+  @IsEnum(FurnishedStatus)
+  furnishedStatus?: FurnishedStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  parkingAvailable?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  parkingSpaces?: number;
+
+  @ApiPropertyOptional({ enum: WaterAvailability })
+  @IsOptional()
+  @IsEnum(WaterAvailability)
+  waterAvailability?: WaterAvailability;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  petFriendly?: boolean;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  securityFeatures?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  proximityTags?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  utilitiesIncluded?: string[];
+
+  @ApiPropertyOptional({ description: 'Earliest move-in / availability date (ISO)' })
+  @IsOptional()
+  @IsDateString()
+  availableFrom?: string;
 
   @ApiPropertyOptional({ description: 'Opt into the public marketplace at creation time' })
   @IsOptional()

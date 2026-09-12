@@ -117,7 +117,8 @@ export class UnitTypesService {
     // AUTO unless the landlord is declaring stock up front (a manual count
     // only makes sense when tracking informally, where lease records don't
     // drive the numbers).
-    const trackingMode = dto.trackingMode ?? (dto.totalCount && dto.totalCount > 0 ? 'MANUAL' : 'AUTO');
+    const trackingMode =
+      dto.trackingMode ?? (dto.totalCount && dto.totalCount > 0 ? 'MANUAL' : 'AUTO');
     const declared =
       trackingMode === 'MANUAL'
         ? {
@@ -143,6 +144,16 @@ export class UnitTypesService {
           bedrooms: dto.bedrooms,
           bathrooms: dto.bathrooms,
           sizeSqm: dto.sizeSqm,
+          unitType: dto.unitType ?? 'OTHER',
+          furnishedStatus: dto.furnishedStatus,
+          parkingAvailable: dto.parkingAvailable ?? false,
+          parkingSpaces: dto.parkingSpaces,
+          waterAvailability: dto.waterAvailability,
+          petFriendly: dto.petFriendly ?? false,
+          securityFeatures: dto.securityFeatures ?? [],
+          proximityTags: dto.proximityTags ?? [],
+          utilitiesIncluded: dto.utilitiesIncluded ?? [],
+          availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
           trackingMode,
           totalCount: declared.totalCount,
           vacantCount: declared.vacantCount,
@@ -171,7 +182,12 @@ export class UnitTypesService {
     }
   }
 
-  async findAll(userId: string, organizationId: string, propertyId: string, query: QueryUnitTypesDto) {
+  async findAll(
+    userId: string,
+    organizationId: string,
+    propertyId: string,
+    query: QueryUnitTypesDto,
+  ) {
     await this.organizations.assertMembership(userId, organizationId);
     await this.getOwnedProperty(organizationId, propertyId);
 
@@ -247,11 +263,17 @@ export class UnitTypesService {
       }
     }
 
-    const { trackingMode, ...rest } = dto;
+    const { trackingMode, availableFrom, ...rest } = dto;
+    const data = {
+      ...rest,
+      ...(availableFrom !== undefined
+        ? { availableFrom: availableFrom ? new Date(availableFrom) : null }
+        : {}),
+    };
     const updated = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.unitTypeDefinition.update({
+      await tx.unitTypeDefinition.update({
         where: { id: unitTypeId },
-        data: rest,
+        data,
       });
 
       // Switching INTO AUTO resyncs immediately so counts reflect reality
@@ -287,7 +309,7 @@ export class UnitTypesService {
   async remove(userId: string, organizationId: string, propertyId: string, unitTypeId: string) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     this.assertCanManage(membership.role);
-    const unitType = await this.getOwnedUnitType(organizationId, propertyId, unitTypeId);
+    await this.getOwnedUnitType(organizationId, propertyId, unitTypeId);
 
     const activeTenancies = await this.prisma.tenancy.count({
       where: { unit: { unitTypeId }, status: { in: ['ACTIVE', 'PENDING'] } },
@@ -334,7 +356,12 @@ export class UnitTypesService {
     const unitType = await this.getOwnedUnitType(organizationId, propertyId, unitTypeId);
 
     if (delta === 0) {
-      return { unitTypeId, before: unitType.vacantCount, after: unitType.vacantCount, applied: false };
+      return {
+        unitTypeId,
+        before: unitType.vacantCount,
+        after: unitType.vacantCount,
+        applied: false,
+      };
     }
     if (unitType.trackingMode === 'AUTO') {
       throw new BadRequestException(
@@ -419,7 +446,11 @@ export class UnitTypesService {
   }
 
   // Applies an atomic, bounds-guarded delta inside an existing transaction.
-  private async adjustVacancyTx(tx: Tx, type: { id: string; totalCount: number; vacantCount: number }, delta: number) {
+  private async adjustVacancyTx(
+    tx: Tx,
+    type: { id: string; totalCount: number; vacantCount: number },
+    delta: number,
+  ) {
     if (type.totalCount === 0 && delta > 0) {
       throw new ConflictException(
         'Cannot increase vacancy past totalCount. Add stock (totalCount) first.',
@@ -442,7 +473,11 @@ export class UnitTypesService {
       where: { id: type.id },
       select: { vacantCount: true },
     });
-    return { unitTypeId: type.id, before: type.vacantCount, after: after?.vacantCount ?? type.vacantCount };
+    return {
+      unitTypeId: type.id,
+      before: type.vacantCount,
+      after: after?.vacantCount ?? type.vacantCount,
+    };
   }
 
   // ── Resync (AUTO) ──────────────────────────────────────────────────
@@ -554,16 +589,22 @@ export class UnitTypesService {
    * Unit row under the type so tenancy/invitation flows (which key on
    * unitId) keep working unchanged.
    */
-  async materializeUnit(userId: string, organizationId: string, propertyId: string, unitTypeId: string) {
+  async materializeUnit(
+    userId: string,
+    organizationId: string,
+    propertyId: string,
+    unitTypeId: string,
+  ) {
     const membership = await this.organizations.assertMembership(userId, organizationId);
     this.assertCanManage(membership.role);
     const unitType = await this.getOwnedUnitType(organizationId, propertyId, unitTypeId);
 
-    const slug = unitType.typeName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 40) || 'unit';
+    const slug =
+      unitType.typeName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'unit';
 
     let unitNumber = '';
     for (let i = 1; i <= 1000; i += 1) {
@@ -593,6 +634,16 @@ export class UnitTypesService {
           bedrooms: unitType.bedrooms ?? undefined,
           bathrooms: unitType.bathrooms ?? undefined,
           sizeSqm: unitType.sizeSqm,
+          unitType: unitType.unitType,
+          furnishedStatus: unitType.furnishedStatus ?? undefined,
+          parkingAvailable: unitType.parkingAvailable,
+          parkingSpaces: unitType.parkingSpaces ?? undefined,
+          waterAvailability: unitType.waterAvailability ?? undefined,
+          petFriendly: unitType.petFriendly,
+          securityFeatures: unitType.securityFeatures,
+          proximityTags: unitType.proximityTags,
+          utilitiesIncluded: unitType.utilitiesIncluded,
+          availableFrom: unitType.availableFrom,
           isPubliclyListable: false,
           listIndividually: false,
         },
@@ -875,19 +926,18 @@ export class UnitTypesService {
     });
     if (!owner) return;
 
-    const type = after === 0 ? 'UNIT_TYPE_FULLY_BOOKED' : 'UNIT_TYPE_LOW_VACANCY' as const;
-    const title =
-      after === 0
-        ? 'Unit type fully booked'
-        : `${unitType.typeName} is almost full`;
+    const type = after === 0 ? 'UNIT_TYPE_FULLY_BOOKED' : ('UNIT_TYPE_LOW_VACANCY' as const);
+    const title = after === 0 ? 'Unit type fully booked' : `${unitType.typeName} is almost full`;
     const body =
       after === 0
         ? `"${unitType.typeName}" at ${unitType.property.name} now has no vacant units.`
         : `Only ${after} of ${
-            (await this.prisma.unitTypeDefinition.findUnique({
-              where: { id: unitTypeId },
-              select: { totalCount: true },
-            }))?.totalCount ?? '?'
+            (
+              await this.prisma.unitTypeDefinition.findUnique({
+                where: { id: unitTypeId },
+                select: { totalCount: true },
+              })
+            )?.totalCount ?? '?'
           } units of "${unitType.typeName}" are still available at ${unitType.property.name}.`;
 
     await this.notifications.dispatch({

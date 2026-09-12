@@ -12,6 +12,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatGridSkeleton } from '@/components/ui/Skeleton';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { AnalyticsSection } from '@/components/dashboard/AnalyticsSection';
 import { canAny } from '@/lib/rbac';
 import type { FinancialReport, OccupancyReport, Property, Payment, Announcement } from '@/types';
 
@@ -28,6 +29,7 @@ export default function DashboardPage() {
   const orgId = activeOrg?.id;
 
   const canFinancials = canAny(role, ['report:read', 'payment:read']);
+  const canAnalytics = ['OWNER', 'PROPERTY_MANAGER', 'ACCOUNTANT'].includes(role as string);
 
   const orgKey = orgId ?? 'none';
 
@@ -136,6 +138,8 @@ export default function DashboardPage() {
           />
         </div>
       )}
+
+      {canAnalytics && orgId && <AnalyticsSection orgId={orgId} orgKey={orgKey} />}
 
       {canFinancials && breakdownData.length > 0 && (
         <section className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">

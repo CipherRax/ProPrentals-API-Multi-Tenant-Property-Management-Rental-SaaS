@@ -46,7 +46,16 @@ export class TenantsService {
         include: {
           tenancies: {
             where: { status: { in: ['ACTIVE', 'PENDING'] } },
-            include: { unit: { select: { id: true, unitNumber: true, propertyId: true, unitTypeDefinition: { select: { id: true, typeName: true } } } } },
+            include: {
+              unit: {
+                select: {
+                  id: true,
+                  unitNumber: true,
+                  propertyId: true,
+                  unitTypeDefinition: { select: { id: true, typeName: true } },
+                },
+              },
+            },
           },
         },
       }),
@@ -61,7 +70,16 @@ export class TenantsService {
     return this.getOwnedTenantProfile(organizationId, tenantProfileId, {
       tenancies: {
         orderBy: { createdAt: 'desc' },
-        include: { unit: { select: { id: true, unitNumber: true, propertyId: true, unitTypeDefinition: { select: { id: true, typeName: true } } } } },
+        include: {
+          unit: {
+            select: {
+              id: true,
+              unitNumber: true,
+              propertyId: true,
+              unitTypeDefinition: { select: { id: true, typeName: true } },
+            },
+          },
+        },
       },
     });
   }
@@ -112,7 +130,16 @@ export class TenantsService {
         organization: { select: { id: true, name: true, logoUrl: true } },
         tenancies: {
           where: { status: { in: ['ACTIVE', 'PENDING'] } },
-          include: { unit: { select: { id: true, unitNumber: true, propertyId: true, unitTypeDefinition: { select: { id: true, typeName: true } } } } },
+          include: {
+            unit: {
+              select: {
+                id: true,
+                unitNumber: true,
+                propertyId: true,
+                unitTypeDefinition: { select: { id: true, typeName: true } },
+              },
+            },
+          },
         },
       },
     });

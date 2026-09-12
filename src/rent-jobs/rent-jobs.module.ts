@@ -7,11 +7,7 @@ import { TenanciesModule } from '../tenancies/tenancies.module';
 import { RENT_QUEUE } from './rent-jobs.constants';
 
 @Module({
-  imports: [
-    BullModule.registerQueue({ name: RENT_QUEUE }),
-    RentChargesModule,
-    TenanciesModule,
-  ],
+  imports: [BullModule.registerQueue({ name: RENT_QUEUE }), RentChargesModule, TenanciesModule],
   providers: [RentSchedulerService, RentProcessor],
 })
 export class RentJobsModule {}

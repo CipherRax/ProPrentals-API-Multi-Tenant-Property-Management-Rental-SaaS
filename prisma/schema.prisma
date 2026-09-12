@@ -127,6 +127,7 @@ model Organization {
   tenantInvitations   TenantInvitation[]
   tenantProfiles      TenantProfile[]
   peerConversations   PeerConversation[]
+  analyticsInsights   AnalyticsInsight[]
 
   @@index([subscriptionStatus])
   @@map("organizations")
@@ -198,6 +199,7 @@ model Property {
   county             String?
   city               String?
   neighborhood       String?
+  estate             String?
   latitude           Float?
   longitude          Float?
   postalAddress      String?
@@ -273,6 +275,18 @@ model UnitTypeDefinition {
   bedrooms            Int?
   bathrooms           Int?
   sizeSqm             Decimal?              @db.Decimal(10, 2)
+  // Structured marketplace attributes. Free text is never filterable, so
+  // everything a tenant can search by is stored as a structured value.
+  unitType            UnitType              @default(OTHER)
+  furnishedStatus     FurnishedStatus?
+  parkingAvailable    Boolean               @default(false)
+  parkingSpaces       Int?
+  waterAvailability   WaterAvailability?
+  petFriendly         Boolean               @default(false)
+  securityFeatures    String[]              @default([])
+  proximityTags       String[]              @default([])
+  utilitiesIncluded   String[]              @default([])
+  availableFrom       DateTime?
   // AUTO = totalCount/vacantCount are derived from physical Unit records
   // + tenancy state (the recommended, single-source-of-truth mode).
   // MANUAL = counts are landlord-declared via the +/- stepper (for
@@ -311,6 +325,18 @@ model Unit {
   depositAmount      Decimal                @db.Decimal(12, 2)
   description        String?
   amenities          String[]               @default([])
+  // Structured marketplace attributes (inherited from UnitTypeDefinition
+  // when materialised; may differ for individually-listed units).
+  unitType           UnitType              @default(OTHER)
+  furnishedStatus    FurnishedStatus?
+  parkingAvailable   Boolean               @default(false)
+  parkingSpaces      Int?
+  waterAvailability  WaterAvailability?
+  petFriendly        Boolean               @default(false)
+  securityFeatures   String[]              @default([])
+  proximityTags      String[]              @default([])
+  utilitiesIncluded  String[]              @default([])
+  availableFrom      DateTime?
   availabilityStatus UnitAvailabilityStatus @default(VACANT)
   isPubliclyListable Boolean                @default(false)
   listIndividually   Boolean                @default(false) // escape hatch: surface this physical unit as its own marketplace card alongside its unit type
@@ -585,6 +611,11 @@ model TenantInvitation {
   phone                 String?
   proposedRentAmount    Decimal          @db.Decimal(12, 2)
   proposedDepositAmount Decimal          @db.Decimal(12, 2)
+  // Set when the landlord explicitly opted into a custom rate different
+  // from the unit's standard listed rent/deposit. When false the proposed
+  // values were inherited verbatim from the unit (single source of truth).
+  customRent            Boolean          @default(false)
+  customDeposit         Boolean          @default(false)
   proposedStartDate     DateTime?
   billingFrequency      BillingFrequency @default(MONTHLY)
   paymentDueDay         Int              @default(5)
@@ -614,6 +645,11 @@ model Tenancy {
   endDate            DateTime?
   rentAmount         Decimal             @db.Decimal(12, 2)
   depositAmount      Decimal             @db.Decimal(12, 2)
+  // Mirrors TenantInvitation.customRent/customDeposit so the final lease
+  // records whether its amounts were inherited from the unit or were an
+  // explicit, deliberate override. Never silently diverges from the unit.
+  customRent         Boolean             @default(false)
+  customDeposit      Boolean             @default(false)
   paymentDueDay      Int                 @default(5)
   billingFrequency   BillingFrequency    @default(MONTHLY)
   status             TenancyStatus       @default(PENDING)
@@ -1018,11 +1054,26 @@ enum UnitType {
   TWO_BEDROOM
   THREE_BEDROOM
   MAISONETTE
+  BUNGALOW
+  STUDIO
   HOUSE
   SHOP
   OFFICE
   PARKING_SPACE
   OTHER
+}
+
+enum FurnishedStatus {
+  UNFURNISHED
+  SEMI_FURNISHED
+  FULLY_FURNISHED
+}
+
+enum WaterAvailability {
+  BOREHOLE
+  PIPED
+  TWENTY_FOUR_HOUR
+  NONE
 }
 
 enum UnitAvailabilityStatus {
@@ -1056,6 +1107,40 @@ enum BillingFrequency {
   MONTHLY
   QUARTERLY
   ANNUALLY
+}
+
+// ── AI features ──────────────────────────────────────────────────
+// Cached, landlord-scoped AI insights. One row per organization so
+// summaries/suggestions are regenerated on a sensible cadence (daily)
+// instead of on every page render, and so dismissed suggestions stay
+// dismissed across restarts. All prompt payloads are built exclusively
+// from the owning organization's own analytics — never cross-tenant.
+model AnalyticsInsight {
+  id             String   @id @default(uuid())
+  organizationId String   @unique
+  generatedAt    DateTime @default(now())
+  summary        String
+  criticalIssues Json // InsightItem[] {id,title,details,unitTypeId?,propertyId?,metric?,basis?}
+  suggestions    Json // InsightItem[] {id,title,details,unitTypeId?,propertyId?,metric?,basis?,dismissed}
+  provider       String   @default("heuristic") // "heuristic" | "openai"
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("analytics_insights")
+}
+
+// Anonymous marketplace natural-language search log. Used to learn what
+// tenants actually ask for and improve the filter taxonomy. Never tied
+// to a user, IP, or any identity — query text only (the same text the
+// tenant typed into a public search box).
+model MarketplaceSearchLog {
+  id        String   @id @default(uuid())
+  query     String
+  filters   Json?
+  createdAt DateTime @default(now())
+
+  @@index([query])
+  @@index([createdAt])
+  @@map("marketplace_search_logs")
 }
 
 enum TenancyStatus {

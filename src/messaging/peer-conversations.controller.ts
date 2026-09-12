@@ -44,7 +44,12 @@ export class PeerConversationsController {
     @Param('peerConversationId') peerConversationId: string,
     @Query() query: PaginationQueryDto,
   ) {
-    return this.peerConversationsService.getMessages(userId, organizationId, peerConversationId, query);
+    return this.peerConversationsService.getMessages(
+      userId,
+      organizationId,
+      peerConversationId,
+      query,
+    );
   }
 
   @Post(':peerConversationId/messages')
@@ -54,7 +59,12 @@ export class PeerConversationsController {
     @Param('peerConversationId') peerConversationId: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.peerConversationsService.sendMessage(userId, organizationId, peerConversationId, dto);
+    return this.peerConversationsService.sendMessage(
+      userId,
+      organizationId,
+      peerConversationId,
+      dto,
+    );
   }
 
   @Patch(':peerConversationId/read')

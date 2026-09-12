@@ -27,6 +27,10 @@ export const queryKeys = {
     tenants: (orgId: string) => ['orgs', orgId, 'reports', 'tenants'] as const,
     maintenance: (orgId: string) => ['orgs', orgId, 'reports', 'maintenance'] as const,
   },
+  analytics: (orgId: string, scope?: { propertyId?: string; unitTypeId?: string }) =>
+    ['orgs', orgId, 'analytics', scope ?? 'portfolio'] as const,
+  insights: (orgId: string, scope?: { propertyId?: string; unitTypeId?: string }) =>
+    ['orgs', orgId, 'analytics', 'insights', scope ?? 'portfolio'] as const,
   plans: ['subscriptions', 'plans'] as const,
   adminOrgs: (params: Record<string, unknown>) => ['admin', 'organizations', params] as const,
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useState, type Dispatch, type KeyboardEvent, type SetStateAction } from 'react';
 import Link from 'next/link';
 import {
   Home,
@@ -19,6 +19,9 @@ import {
   ArrowRight,
   Users,
   Eye,
+  Sparkles,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { api, formatMoney, resolveAssetUrl } from '@/lib/api';
 import { PageLoader } from '@/components/ui/Spinner';
@@ -27,7 +30,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/lib/toast';
 import { useAuth } from '@/lib/auth';
 import { initials } from '@/lib/utils';
-import type { Listing, PaginationMeta, MarketSummary } from '@/types';
+import type { Listing, PaginationMeta, MarketSummary, AiParsedSearch } from '@/types';
 
 const UNIT_TYPE_LABELS: Record<string, string> = {
   APARTMENT: 'Apartment',
@@ -38,11 +41,32 @@ const UNIT_TYPE_LABELS: Record<string, string> = {
   THREE_BEDROOM: '3 bedroom',
   MAISONETTE: 'Maisonette',
   HOUSE: 'House',
+  BUNGALOW: 'Bungalow',
+  STUDIO: 'Studio',
   SHOP: 'Shop',
   OFFICE: 'Office',
   PARKING_SPACE: 'Parking space',
   OTHER: 'Other',
 };
+
+const FURNISHING_OPTIONS: Record<string, string> = {
+  UNFURNISHED: 'Unfurnished',
+  SEMI_FURNISHED: 'Semi-furnished',
+  FULLY_FURNISHED: 'Fully furnished',
+};
+
+const WATER_OPTIONS: Record<string, string> = {
+  BOREHOLE: 'Borehole',
+  PIPED: 'Piped',
+  TWENTY_FOUR_HOUR: '24-hour supply',
+  NONE: 'No water',
+};
+
+const SECURITY_OPTIONS = ['Gated', 'CCTV', '24/7 guards', 'Boarded', 'Watchman'];
+
+const PROXIMITY_OPTIONS = ['School', 'Matatu stage', 'Shopping center', 'Hospital', 'Church', 'Supermarket'];
+
+const UTILITIES_OPTIONS = ['Water', 'WiFi', 'Electricity', 'Garbage collection', 'Sewer'];
 
 const AMENITY_OPTIONS = [
   'Parking',
@@ -68,14 +92,34 @@ export function Marketplace() {
 
   const [search, setSearch] = useState('');
   const [county, setCounty] = useState('');
+  const [city, setCity] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   const [unitType, setUnitType] = useState('');
   const [bedrooms, setBedrooms] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [amenities, setAmenities] = useState<string[]>([]);
+  const [furnished, setFurnished] = useState<string[]>([]);
+  const [water, setWater] = useState<string[]>([]);
+  const [securityFeatures, setSecurityFeatures] = useState<string[]>([]);
+  const [utilitiesIncluded, setUtilitiesIncluded] = useState<string[]>([]);
+  const [proximityTags, setProximityTags] = useState<string[]>([]);
+  const [parking, setParking] = useState('');
+  const [petFriendly, setPetFriendly] = useState('');
+  const [availableFrom, setAvailableFrom] = useState('');
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiChips, setAiChips] = useState<AiParsedSearch['understood']>([]);
+  const [aiParsing, setAiParsing] = useState(false);
   const [sort, setSort] = useState<'asc' | 'desc'>('asc');
   const [includeUnavailable, setIncludeUnavailable] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const toggleChip = (
+    setter: Dispatch<SetStateAction<string[]>>,
+    value: string,
+  ) =>
+    setter((prev) => (prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]));
 
   const [selected, setSelected] = useState<Listing | null>(null);
   const [inquiryOpen, setInquiryOpen] = useState(false);
@@ -86,33 +130,48 @@ export function Marketplace() {
 
   const currency = 'KES';
 
+  const loadWith = useCallback(async (params: Record<string, unknown>) => {
+    setLoading(true);
+    try {
+      const d = await api.getList<Listing>('/public/listings', params);
+      setItems(d.items);
+      setMeta(d.meta);
+    } catch (e) {
+      error((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+
   const load = useCallback(
     async (overridePage?: number) => {
-      setLoading(true);
-      try {
-        const d = await api.getList<Listing>('/public/listings', {
-          search: search || undefined,
-          county: county || undefined,
-          unitType: unitType || undefined,
-          bedrooms: bedrooms ? Number(bedrooms) : undefined,
-          minPrice: minPrice ? Number(minPrice) : undefined,
-          maxPrice: maxPrice ? Number(maxPrice) : undefined,
-          amenities: amenities.length ? amenities : undefined,
-          includeUnavailable,
-          sortOrder: sort,
-          page: overridePage ?? 1,
-          limit: 12,
-        });
-        setItems(d.items);
-        setMeta(d.meta);
-      } catch (e) {
-        error((e as Error).message);
-      } finally {
-        setLoading(false);
-      }
+      await loadWith({
+        search: search || undefined,
+        county: county || undefined,
+        city: city || undefined,
+        neighborhood: neighborhood || undefined,
+        unitType: unitType || undefined,
+        bedrooms: bedrooms ? Number(bedrooms) : undefined,
+        minPrice: minPrice ? Number(minPrice) : undefined,
+        maxPrice: maxPrice ? Number(maxPrice) : undefined,
+        amenities: amenities.length ? amenities : undefined,
+        furnished: furnished.length ? furnished : undefined,
+        water: water.length ? water : undefined,
+        securityFeatures: securityFeatures.length ? securityFeatures : undefined,
+        utilitiesIncluded: utilitiesIncluded.length ? utilitiesIncluded : undefined,
+        proximityTags: proximityTags.length ? proximityTags : undefined,
+        parking: parking ? parking === 'yes' : undefined,
+        petFriendly: petFriendly ? petFriendly === 'yes' : undefined,
+        availableFrom: availableFrom || undefined,
+        includeUnavailable,
+        sortOrder: sort,
+        page: overridePage ?? 1,
+        limit: 12,
+      });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, county, unitType, bedrooms, minPrice, maxPrice, sort, amenities, includeUnavailable, error],
+    [search, county, city, neighborhood, unitType, bedrooms, minPrice, maxPrice, sort, amenities, furnished, water, securityFeatures, utilitiesIncluded, proximityTags, parking, petFriendly, availableFrom, includeUnavailable, loadWith],
   );
 
   useEffect(() => {
@@ -158,14 +217,101 @@ export function Marketplace() {
   const clearFilters = () => {
     setSearch('');
     setCounty('');
+    setCity('');
+    setNeighborhood('');
     setUnitType('');
     setBedrooms('');
     setMinPrice('');
     setMaxPrice('');
     setAmenities([]);
+    setFurnished([]);
+    setWater([]);
+    setSecurityFeatures([]);
+    setUtilitiesIncluded([]);
+    setProximityTags([]);
+    setParking('');
+    setPetFriendly('');
+    setAvailableFrom('');
+    setAiChips([]);
+    setAiQuery('');
     setIncludeUnavailable(false);
     setSort('asc');
     load(1);
+  };
+
+  const applyAiSearch = async (raw: string) => {
+    if (!raw.trim() || aiParsing) return;
+    setAiParsing(true);
+    try {
+      const parsed = await api.post<{ query: string; filters: Record<string, unknown>; keyword?: string; understood: AiParsedSearch['understood'] }>(
+        '/public/listings/ai/parse',
+        { query: raw },
+      );
+      const f = parsed.filters ?? {};
+      if (f.unitType) setUnitType(String(f.unitType));
+      if (f.bedrooms != null) setBedrooms(String(f.bedrooms));
+      if (f.minPrice != null) setMinPrice(String(f.minPrice));
+      if (f.maxPrice != null) setMaxPrice(String(f.maxPrice));
+      if (f.county) setCounty(String(f.county));
+      if (f.city) setCity(String(f.city));
+      if (f.neighborhood) setNeighborhood(String(f.neighborhood));
+      if (f.availableFrom) setAvailableFrom(String(f.availableFrom));
+      if (Array.isArray(f.furnished)) setFurnished(f.furnished.map(String));
+      if (Array.isArray(f.water)) setWater(f.water.map(String));
+      if (Array.isArray(f.securityFeatures)) setSecurityFeatures(f.securityFeatures.map(String));
+      if (Array.isArray(f.utilitiesIncluded)) setUtilitiesIncluded(f.utilitiesIncluded.map(String));
+      if (Array.isArray(f.amenities)) setAmenities(f.amenities.map(String));
+      if (typeof f.parking === 'boolean') setParking(f.parking ? 'yes' : 'no');
+      if (typeof f.petFriendly === 'boolean') setPetFriendly(f.petFriendly ? 'yes' : 'no');
+      setSearch(parsed.keyword ?? '');
+      setAiChips(parsed.understood ?? []);
+      await load(1);
+    } catch (e) {
+      error((e as Error).message);
+    } finally {
+      setAiParsing(false);
+    }
+  };
+
+  const removeAiChip = async (chip: AiParsedSearch['understood'][number]) => {
+    const nextChips = aiChips.filter((c) => c.id !== chip.id);
+    setAiChips(nextChips);
+    const s = {
+      search: chip.filter === 'keyword' ? '' : search,
+      county: chip.filter === 'county' ? '' : county,
+      city: chip.filter === 'city' ? '' : city,
+      neighborhood: chip.filter === 'neighborhood' ? '' : neighborhood,
+      unitType: chip.filter === 'unitType' ? '' : unitType,
+      bedrooms: chip.filter === 'bedrooms' ? '' : bedrooms,
+      minPrice: chip.filter === 'minPrice' ? '' : minPrice,
+      maxPrice: chip.filter === 'maxPrice' ? '' : maxPrice,
+      parking: chip.filter === 'parking' ? '' : parking,
+      petFriendly: chip.filter === 'petFriendly' ? '' : petFriendly,
+      availableFrom: chip.filter === 'availableFrom' ? '' : availableFrom,
+    };
+    await loadWith({
+      search: s.search || undefined,
+      county: s.county || undefined,
+      city: s.city || undefined,
+      neighborhood: s.neighborhood || undefined,
+      unitType: s.unitType || undefined,
+      bedrooms: s.bedrooms ? Number(s.bedrooms) : undefined,
+      minPrice: s.minPrice ? Number(s.minPrice) : undefined,
+      maxPrice: s.maxPrice ? Number(s.maxPrice) : undefined,
+      amenities: chip.filter === 'amenities' ? undefined : amenities.length ? amenities : undefined,
+      furnished: chip.filter === 'furnished' ? undefined : furnished.length ? furnished : undefined,
+      water: chip.filter === 'water' ? undefined : water.length ? water : undefined,
+      securityFeatures: chip.filter === 'securityFeatures' ? undefined : securityFeatures.length ? securityFeatures : undefined,
+      utilitiesIncluded: chip.filter === 'utilitiesIncluded' ? undefined : utilitiesIncluded.length ? utilitiesIncluded : undefined,
+      proximityTags: proximityTags.length ? proximityTags : undefined,
+      parking: s.parking ? s.parking === 'yes' : undefined,
+      petFriendly: s.petFriendly ? s.petFriendly === 'yes' : undefined,
+      availableFrom: s.availableFrom || undefined,
+      includeUnavailable,
+      sortOrder: sort,
+      page: 1,
+      limit: 12,
+    });
   };
 
   const submitInquiry = async () => {
@@ -194,7 +340,9 @@ export function Marketplace() {
   };
 
   const showFilters =
-    search || county || unitType || bedrooms || minPrice || maxPrice || amenities.length || includeUnavailable;
+    search || county || city || neighborhood || unitType || bedrooms || minPrice || maxPrice || amenities.length ||
+    furnished.length || water.length || securityFeatures.length || utilitiesIncluded.length ||
+    proximityTags.length || parking || petFriendly || availableFrom || includeUnavailable || aiChips.length;
 
   const homeHref = !user
     ? null
@@ -311,6 +459,33 @@ export function Marketplace() {
             Real homes and apartments across Kenya — with real rent, real photos, and no agency fees.
           </p>
 
+          {/* AI natural-language search */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              applyAiSearch(aiQuery);
+            }}
+            className="mt-10 w-full max-w-2xl rounded-card bg-gradient-to-r from-brand-600 via-brand-500 to-brand-600 p-[2px] shadow-card"
+          >
+            <div className="flex items-center gap-3 rounded-[calc(1rem-2px)] bg-white p-3">
+              <Sparkles className="h-5 w-5 shrink-0 text-brand-600" />
+              <input
+                className="w-full bg-transparent text-sm text-paper-900 placeholder:text-paper-400 focus:outline-none"
+                placeholder="Describe your home — '2 bedroom near CBD under 20k, pet friendly'"
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                aria-label="AI natural language search"
+              />
+              <button type="submit" className="btn-primary shrink-0 py-2" disabled={aiParsing}>
+                {aiParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                AI search
+              </button>
+            </div>
+            <p className="px-3.5 pb-2 pt-1.5 text-[11px] text-white/85">
+              Try &ldquo;2 bed near CBD under 20k&rdquo; · &ldquo;bedsitter in Ruiru with parking&rdquo; · &ldquo;maisonette, pet friendly, Westlands&rdquo;
+            </p>
+          </form>
+
           {/* Floating search card */}
           <form
             onSubmit={(e) => {
@@ -347,6 +522,26 @@ export function Marketplace() {
               </button>
             </div>
           </form>
+
+          {aiChips.length > 0 && (
+            <div className="mt-4 flex max-w-2xl flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-100">
+                <Sparkles className="h-3.5 w-3.5" /> Applied from your search:
+              </span>
+              {aiChips.map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => removeAiChip(chip)}
+                  title={`Remove ${chip.label}`}
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-white/25"
+                >
+                  {chip.label}
+                  <X className="h-3 w-3 text-brand-200 transition-colors group-hover:text-white" />
+                </button>
+              ))}
+            </div>
+          )}
 
           {summary && (
             <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-brand-50/90">
@@ -402,8 +597,22 @@ export function Marketplace() {
               Filters
               {showFilters && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-semibold text-white">
-                  {[search, county, unitType, bedrooms, minPrice, maxPrice].filter(Boolean).length +
-                    amenities.length}
+                  {[
+                    search,
+                    county,
+                    unitType,
+                    bedrooms,
+                    minPrice,
+                    maxPrice,
+                    furnished.join(','),
+                    water.join(','),
+                    securityFeatures.join(','),
+                    utilitiesIncluded.join(','),
+                    proximityTags.join(','),
+                    parking,
+                    petFriendly,
+                    availableFrom,
+                  ].filter(Boolean).length + amenities.length}
                 </span>
               )}
             </button>
@@ -423,87 +632,288 @@ export function Marketplace() {
 
         {/* Filter bar */}
         <div
-          className={`mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 ${
-            filtersOpen || showFilters ? 'block' : 'hidden'
-          } lg:grid`}
+          className={`mt-5 ${filtersOpen || showFilters || moreOpen ? 'block' : 'hidden'} ${
+            filtersOpen || showFilters ? 'lg:block' : 'lg:block'
+          }`}
         >
-          <label className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-400" />
-            <input
-              className="input pl-9"
-              placeholder="Location"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </label>
-          <label className="relative">
-            <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-400" />
-            <input
-              className="input pl-9"
-              placeholder="County"
-              value={county}
-              onChange={(e) => setCounty(e.target.value)}
-            />
-          </label>
-          <select
-            className="input"
-            value={bedrooms}
-            onChange={(e) => setBedrooms(e.target.value)}
-            aria-label="Bedrooms"
-          >
-            <option value="">Any bedrooms</option>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {n} bed{n > 1 ? 's' : ''}
-              </option>
-            ))}
-          </select>
-          <div className="flex gap-2">
-            <input
+          {/* Always-visible filters: type, price, bedrooms, location */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <label className="relative sm:col-span-2 lg:col-span-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-400" />
+              <input
+                className="input pl-9"
+                placeholder="Location"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            <label className="relative">
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-400" />
+              <input
+                className="input pl-9"
+                placeholder="County"
+                value={county}
+                onChange={(e) => setCounty(e.target.value)}
+              />
+            </label>
+            <select
               className="input"
-              placeholder="Min rent"
-              type="number"
-              min={0}
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-            />
-            <input
+              value={unitType}
+              onChange={(e) => setUnitType(e.target.value)}
+              aria-label="Unit type"
+            >
+              <option value="">Any type</option>
+              {Object.entries(UNIT_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <select
               className="input"
-              placeholder="Max rent"
-              type="number"
-              min={0}
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-            />
-          </div>
-
-          <div className="sm:col-span-2 lg:col-span-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-paper-400">
-                Amenities
-              </span>
-              {AMENITY_OPTIONS.map((a) => {
-                const on = amenities.includes(a);
-                return (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => toggleAmenity(a)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                      on
-                        ? 'border-brand-500 bg-brand-500 text-white'
-                        : 'border-paper-200 bg-white text-paper-600 hover:border-brand-300 hover:text-brand-700'
-                    }`}
-                  >
-                    {on && <CheckIcon />}
-                    {a}
-                  </button>
-                );
-              })}
+              value={bedrooms}
+              onChange={(e) => setBedrooms(e.target.value)}
+              aria-label="Bedrooms"
+            >
+              <option value="">Any bedrooms</option>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>
+                  {n} bed{n > 1 ? 's' : ''}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-2 sm:col-span-2 lg:col-span-1">
+              <input
+                className="input"
+                placeholder="Min rent"
+                type="number"
+                min={0}
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+              <input
+                className="input"
+                placeholder="Max rent"
+                type="number"
+                min={0}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4">
+          {/* Expandable advanced filters */}
+          <button
+            type="button"
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 hover:text-brand-800"
+            onClick={() => setMoreOpen((o) => !o)}
+            aria-expanded={moreOpen}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            More filters
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {moreOpen && (
+            <div className="mt-3 space-y-4 rounded-lg border border-paper-200 bg-paper-50/50 p-4">
+              <div>
+                <span className="mb-2 block text-xs font-medium uppercase tracking-wide text-paper-400">
+                  Furnishing
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(FURNISHING_OPTIONS).map(([value, label]) => {
+                    const on = furnished.includes(value);
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => toggleChip(setFurnished, value)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          on
+                            ? 'border-brand-500 bg-brand-500 text-white'
+                            : 'border-paper-200 bg-white text-paper-600 hover:border-brand-300 hover:text-brand-700'
+                        }`}
+                      >
+                        {on && <CheckIcon />}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <span className="mb-2 block text-xs font-medium uppercase tracking-wide text-paper-400">
+                  Water supply
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(WATER_OPTIONS).map(([value, label]) => {
+                    const on = water.includes(value);
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => toggleChip(setWater, value)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          on
+                            ? 'border-brand-500 bg-brand-500 text-white'
+                            : 'border-paper-200 bg-white text-paper-600 hover:border-brand-300 hover:text-brand-700'
+                        }`}
+                      >
+                        {on && <CheckIcon />}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <span className="mb-2 block text-xs font-medium uppercase tracking-wide text-paper-400">
+                  Security
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {SECURITY_OPTIONS.map((s) => {
+                    const on = securityFeatures.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => toggleChip(setSecurityFeatures, s)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          on
+                            ? 'border-brand-500 bg-brand-500 text-white'
+                            : 'border-paper-200 bg-white text-paper-600 hover:border-brand-300 hover:text-brand-700'
+                        }`}
+                      >
+                        {on && <CheckIcon />}
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <span className="mb-2 block text-xs font-medium uppercase tracking-wide text-paper-400">
+                  Nearby
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {PROXIMITY_OPTIONS.map((p) => {
+                    const on = proximityTags.includes(p);
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => toggleChip(setProximityTags, p)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          on
+                            ? 'border-brand-500 bg-brand-500 text-white'
+                            : 'border-paper-200 bg-white text-paper-600 hover:border-brand-300 hover:text-brand-700'
+                        }`}
+                      >
+                        {on && <CheckIcon />}
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <span className="mb-2 block text-xs font-medium uppercase tracking-wide text-paper-400">
+                  Utilities included
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {UTILITIES_OPTIONS.map((u) => {
+                    const on = utilitiesIncluded.includes(u);
+                    return (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => toggleChip(setUtilitiesIncluded, u)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          on
+                            ? 'border-brand-500 bg-brand-500 text-white'
+                            : 'border-paper-200 bg-white text-paper-600 hover:border-brand-300 hover:text-brand-700'
+                        }`}
+                      >
+                        {on && <CheckIcon />}
+                        {u}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <label className="label">Parking</label>
+                  <select
+                    className="input"
+                    value={parking}
+                    onChange={(e) => setParking(e.target.value)}
+                  >
+                    <option value="">Any</option>
+                    <option value="yes">Parking available</option>
+                    <option value="no">No parking</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Pets</label>
+                  <select
+                    className="input"
+                    value={petFriendly}
+                    onChange={(e) => setPetFriendly(e.target.value)}
+                  >
+                    <option value="">Any</option>
+                    <option value="yes">Pets allowed</option>
+                    <option value="no">No pets</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Available from</label>
+                  <input
+                    className="input"
+                    type="date"
+                    value={availableFrom}
+                    onChange={(e) => setAvailableFrom(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <span className="mb-2 block text-xs font-medium uppercase tracking-wide text-paper-400">
+                  Amenities
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-paper-400" />
+                  {AMENITY_OPTIONS.map((a) => {
+                    const on = amenities.includes(a);
+                    return (
+                      <button
+                        key={a}
+                        type="button"
+                        onClick={() => toggleAmenity(a)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          on
+                            ? 'border-brand-500 bg-brand-500 text-white'
+                            : 'border-paper-200 bg-white text-paper-600 hover:border-brand-300 hover:text-brand-700'
+                        }`}
+                      >
+                        {on && <CheckIcon />}
+                        {a}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-wrap gap-2">
             <button className="btn-primary py-2" onClick={() => load(1)}>
               <SlidersHorizontal className="h-4 w-4" /> Apply filters
             </button>

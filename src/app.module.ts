@@ -29,7 +29,8 @@ import { UnitsModule } from './units/units.module';
 import { UnitTypesModule } from './unit-types/unit-types.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { TenanciesModule } from './tenancies/tenancies.module';
-import { TenantInvitationsModule } from './tenant-invitations/tenant-invitations.module';import { RentConfigurationsModule } from './rent-configurations/rent-configurations.module';
+import { TenantInvitationsModule } from './tenant-invitations/tenant-invitations.module';
+import { RentConfigurationsModule } from './rent-configurations/rent-configurations.module';
 import { RentChargesModule } from './rent-charges/rent-charges.module';
 import { RentJobsModule } from './rent-jobs/rent-jobs.module';
 import { LedgerModule } from './ledger/ledger.module';
@@ -48,6 +49,8 @@ import { InquiriesModule } from './inquiries/inquiries.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { BillingModule } from './billing/billing.module';
 import { ReportsModule } from './reports/reports.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { AiModule } from './ai/ai.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AuditModule } from './audit/audit.module';
 import { AdminModule } from './admin/admin.module';
@@ -105,6 +108,8 @@ import { AdminModule } from './admin/admin.module';
     SubscriptionsModule,
     BillingModule,
     ReportsModule,
+    AnalyticsModule,
+    AiModule,
     DashboardModule,
     AuditModule,
     AdminModule,

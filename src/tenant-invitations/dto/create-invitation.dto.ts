@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BillingFrequency } from '@prisma/client';
 import {
+  IsBoolean,
   IsDateString,
   IsEmail,
   IsEnum,
@@ -35,15 +36,39 @@ export class CreateInvitationDto {
   @IsString()
   phone?: string;
 
-  @ApiProperty({ description: 'Monthly rent to be confirmed on acceptance' })
+  @ApiPropertyOptional({
+    description:
+      "Monthly rent in the invitation. Omit to inherit the unit's current rent. Provide a value with customRent: true to override it.",
+  })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  proposedRentAmount: number;
+  proposedRentAmount?: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description:
+      "Deposit in the invitation. Omit to inherit the unit's current deposit. Provide a value with customDeposit: true to override it.",
+  })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  proposedDepositAmount: number;
+  proposedDepositAmount?: number;
+
+  @ApiPropertyOptional({
+    description:
+      "Must be true when proposedRentAmount differs from the unit's listed rent, so an override is always an explicit, auditable decision.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  customRent?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      "Must be true when proposedDepositAmount differs from the unit's listed deposit, so an override is always an explicit, auditable decision.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  customDeposit?: boolean;
 
   @ApiPropertyOptional({ description: 'ISO date; defaults to today if omitted' })
   @IsOptional()

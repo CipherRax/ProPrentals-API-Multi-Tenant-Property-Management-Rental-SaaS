@@ -2,6 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
+  IsDateString,
+  IsEnum,
   IsIn,
   IsInt,
   IsNumber,
@@ -11,9 +13,12 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { FurnishedStatus, UnitType, WaterAvailability } from '@prisma/client';
 
 export class CreateUnitTypeDto {
-  @ApiProperty({ description: 'Type name shown in the marketplace, e.g. "1 Bedroom". Unique per property.' })
+  @ApiProperty({
+    description: 'Type name shown in the marketplace, e.g. "1 Bedroom". Unique per property.',
+  })
   @IsString()
   @MaxLength(120)
   typeName: string;
@@ -62,6 +67,72 @@ export class CreateUnitTypeDto {
   @IsNumber()
   @Min(0)
   sizeSqm?: number;
+
+  @ApiPropertyOptional({
+    description: 'Structured unit type used for marketplace filtering',
+    enum: UnitType,
+  })
+  @IsOptional()
+  @IsEnum(UnitType)
+  unitType?: UnitType;
+
+  @ApiPropertyOptional({ enum: FurnishedStatus })
+  @IsOptional()
+  @IsEnum(FurnishedStatus)
+  furnishedStatus?: FurnishedStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  parkingAvailable?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  parkingSpaces?: number;
+
+  @ApiPropertyOptional({ enum: WaterAvailability })
+  @IsOptional()
+  @IsEnum(WaterAvailability)
+  waterAvailability?: WaterAvailability;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  petFriendly?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Security features, e.g. GATED_COMPOUND, ON_SITE_GUARD, CCTV, ELECTRIC_FENCE',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  securityFeatures?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Proximity tags, e.g. NEAR_MATATU_STAGE, NEAR_SCHOOLS, NEAR_HOSPITAL, NEAR_MARKET',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  proximityTags?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Utilities included in rent, e.g. WATER, ELECTRICITY, GARBAGE',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  utilitiesIncluded?: string[];
+
+  @ApiPropertyOptional({ description: 'Earliest move-in / availability date (ISO)' })
+  @IsOptional()
+  @IsDateString()
+  availableFrom?: string;
 
   @ApiPropertyOptional({
     description:
