@@ -1,5 +1,15 @@
-import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class PublicListingsQueryDto {
   @IsOptional()
@@ -51,7 +61,13 @@ export class PublicListingsQueryDto {
   bathrooms?: number;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const arr = Array.isArray(value) ? value : String(value).split(',');
+    return arr.map((v) => v.trim()).filter(Boolean);
+  })
   @IsArray()
+  @IsString({ each: true })
   amenities?: string[];
 
   @IsOptional()

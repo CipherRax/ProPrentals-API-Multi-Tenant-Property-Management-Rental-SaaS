@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/Spinner';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Modal } from '@/components/ui/Modal';
+import { SubscriptionPayFlow } from '@/components/payments/SubscriptionPayFlow';
 import { useToast } from '@/lib/toast';
 import { findOrgRole } from '@/lib/org';
 import type { Plan, Property, Subscription, SubscriptionLimits, TenantProfile } from '@/types';
@@ -74,6 +75,15 @@ export default function SubscriptionPage() {
       setSaving(false);
     }
   };
+
+  const onPlanPaid = async () => {
+    if (!activeOrg || !changeTo) return;
+    success(`Payment confirmed. Switched to the ${changeTo.name} plan.`);
+    setChangeTo(null);
+    load();
+  };
+
+  const isPaid = Number(changeTo?.priceMonthly ?? 0) > 0;
 
   if (loading && !sub) return <PageLoader />;
 
@@ -150,23 +160,36 @@ export default function SubscriptionPage() {
       <Modal
         open={!!changeTo}
         onClose={() => setChangeTo(null)}
-        title={`Switch to ${changeTo?.name ?? ''}`}
+        title={isPaid ? `Upgrade to ${changeTo?.name ?? ''}` : `Switch to ${changeTo?.name ?? ''}`}
         size="sm"
         footer={
-          <>
-            <button className="btn-secondary" onClick={() => setChangeTo(null)}>
-              Cancel
-            </button>
-            <button className="btn-primary" onClick={changePlan} disabled={saving}>
-              {saving ? 'Updating…' : 'Confirm change'}
-            </button>
-          </>
+          !isPaid ? (
+            <>
+              <button className="btn-secondary" onClick={() => setChangeTo(null)}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={changePlan} disabled={saving}>
+                {saving ? 'Updating…' : 'Confirm change'}
+              </button>
+            </>
+          ) : undefined
         }
       >
-        <p className="text-sm text-paper-600">
-          You&apos;ll be moved to the {changeTo?.name} plan. Your account will be checked against the new
-          plan&apos;s limits before the change is applied.
-        </p>
+        {isPaid && changeTo && activeOrg ? (
+          <SubscriptionPayFlow
+            orgId={activeOrg.id}
+            tier={changeTo.tier}
+            amount={Number(changeTo.priceMonthly)}
+            currency={currency}
+            onSuccess={onPlanPaid}
+            onError={(m) => error(m)}
+          />
+        ) : (
+          <p className="text-sm text-paper-600">
+            You&apos;ll be moved to the {changeTo?.name} plan. Your account will be checked against
+            the new plan&apos;s limits before the change is applied.
+          </p>
+        )}
       </Modal>
     </div>
   );

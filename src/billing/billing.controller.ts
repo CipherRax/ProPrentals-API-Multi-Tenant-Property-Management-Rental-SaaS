@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -69,6 +69,17 @@ export class BillingController {
     @Body() dto: InitiateSubscriptionStkPushDto,
   ) {
     return this.billing.initiateSubscriptionStkPush(userId, organizationId, dto);
+  }
+
+  @Get('organizations/:organizationId/payments/:paymentId')
+  @OrgRoles('OWNER', 'PROPERTY_MANAGER', 'ACCOUNTANT')
+  @ApiOperation({ summary: 'Fetch a single subscription payment by id (poll M-Pesa status)' })
+  getOne(
+    @CurrentUser('userId') userId: string,
+    @Param('organizationId', ParseUUIDPipe) organizationId: string,
+    @Param('paymentId', ParseUUIDPipe) paymentId: string,
+  ) {
+    return this.billing.getSubscriptionPayment(userId, organizationId, paymentId);
   }
 }
 

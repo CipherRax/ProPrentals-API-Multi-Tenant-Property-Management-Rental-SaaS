@@ -66,12 +66,13 @@ from tenant onboarding to rent collection, receipts, maintenance, and reporting.
 
 ### 🔧 Operations
 - **Maintenance requests** — tenant self-service + landlord status lifecycle (open → in-progress → resolved with notes)
-- **Public listings & inquiries** — an unauthenticated marketplace where prospective renters browse and contact landlords without exposing org identity
+- **Public listings & inquiries** — an unauthenticated marketplace where prospective renters browse and contact landlords without exposing org identity. Listings are **type-first**: one card per unit-type (AUTO/MANUAL vacancy-tracked) with live vacancy counts, and anonymous inquiries hold the unit for 30 minutes
 - **Reports & dashboard** — real-time financial, occupancy, and payment-breakdown summaries with **CSV/PDF export**
 - **Audit log** — append-only trail on every sensitive action
 
 ### 💳 Plans & Monetization
 - **4 subscription tiers** (Free / Starter / Business / Enterprise) with **feature flags and hard limits** enforced at the point of creation — e.g. a Free org can own only **1 property**, and Reports require Business+
+- **Pay-before-switch upgrades** — moving to a paid plan runs an OpenAI-style M-Pesa STK Push checkout first; the switch is applied only after the payment is confirmed (FREE remains an instant switch)
 - **Platform admin** console with org directory, revenue aggregates, verification queue, and payment activity
 
 ---
@@ -162,6 +163,12 @@ proprentals/
 │   ├── reports/ dashboard/
 │   ├── audit/ admin/
 │   └── app.module.ts          # root wiring
+├── web/                       # Next.js frontend (App Router, /app)
+│   └── src/
+│       ├── app/               # routes incl. subscription, marketplace, portals
+│       ├── components/        # UI kit + M-Pesa payment flows
+│       ├── lib/               # API client, auth, org helpers
+│       └── types/             # shared TypeScript types
 └── test/                      # 15 e2e suites
 ```
 
@@ -224,12 +231,21 @@ npm run start:dev
 npm run build && npm run start:prod
 ```
 
-Once running:
+### Running the Frontend
+
+The Next.js frontend lives in `web/` and proxies API calls to the backend:
+
+```bash
+cd web
+npm install
+npx next dev -p 3001
+```
 
 | Resource            | URL                                   |
 | ------------------- | ------------------------------------- |
 | Swagger docs        | `http://localhost:3000/docs`          |
 | Health check        | `http://localhost:3000/api/v1/health` |
+| Frontend app        | `http://localhost:3001`               |
 
 ---
 
@@ -252,8 +268,8 @@ Every response is wrapped in a consistent envelope, either
 | **Notifications**       | `GET /notifications/me` · `PATCH /notifications/me/preferences`            |
 | **Announcements**       | `POST /organizations/:id/announcements` · `GET /tenants/me/announcements`  |
 | **Maintenance**         | `POST /tenants/me/tenancies/:id/maintenance` · `PATCH .../maintenance/:id/status` |
-| **Public listings**     | `GET /public/listings` · `GET /public/listings/:id` · `POST /inquiries/public` |
-| **Subscriptions**       | `GET /subscriptions/plans` · `POST .../subscription/change-plan`            |
+| **Public listings**     | `GET /public/listings` (type-first: one card per unit-type AUTO/MANUAL definition, `amenities` filter accepts CSV/repeated/single values) · `GET /public/listings/:id` · `POST /inquiries/public` |
+| **Subscriptions**       | `GET /subscriptions/plans` · `POST .../subscription/change-plan` · `POST .../subscriptions/.../payments/mpesa/stk-push` · `GET .../payments/:paymentId` (status poll) |
 | **Reports**             | `GET .../reports/financial` · `GET .../reports/occupancy` · CSV export      |
 | **Dashboard / Admin**   | `GET /dashboard` · `GET /admin/organizations` · `GET /admin/dashboard`      |
 

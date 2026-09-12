@@ -188,6 +188,17 @@ export class BillingService {
     };
   }
 
+  // ── Fetch a subscription payment (used by the web to poll M-Pesa status) ──
+
+  async getSubscriptionPayment(userId: string, organizationId: string, paymentId: string) {
+    await this.organizations.assertMembership(userId, organizationId);
+    const payment = await this.prisma.subscriptionPayment.findFirst({
+      where: { id: paymentId, organizationId },
+    });
+    if (!payment) throw new NotFoundException('Subscription payment not found');
+    return payment;
+  }
+
   // ── Callback confirmation (idempotent, routed from MpesaCallbackController) ──
 
   async handleCallback(payload: {
